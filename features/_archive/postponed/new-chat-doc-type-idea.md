@@ -1,41 +1,79 @@
 ---
 type: idea
-id: workflow-new-chat-doc-type
-title: "Document-Driven AI Workflow System (Refined Vision)"
+id: new-chat-doc-type-idea
+title: "New chat doc type"
 status: draft
 created: 2026-04-11
-version: 1.0.0
+uodated: 2026-04-13
+version: 2
 tags: []
 parent_id: null
 child_ids: []
 requires_load: []
 ---
 
-### 💬 New Idea: Informal Chat Documents (`-chat.md`)
+# 💬 New chat doc type
 
-This is an interesting one. Let me give you my honest take.
+## Problem
+Current design docs include the boilerplate of the chat User <-> AI associated.
+Actually only -design docs admit file based chats User <-> AI
 
-**What you're proposing:**
-- A new file type: `{name}-chat.md`
-- Location: `.ws/chats/` (outside the workflow engine's feature directories)
-- No frontmatter, no state machine, no events.
-- Informal, free-form conversation log.
-- Visible in the VS Code tree view as a separate node.
+## Idea
+Instead of attach the bolierplate of the conversacion chat between User and AI inside the design docs, we introduce a new type of doc `-chat.md`.
 
-**Is it useful?**
+## Why now
+I think this is very important and must be designed before implementing anything
 
-| Pros | Cons |
-|------|------|
-| Provides a place for off-topic or exploratory chats that don't belong in a feature design. | Adds a second "kind" of chat to the system, potentially confusing users about where to put conversations. |
-| Keeps `design.md` focused on feature-specific decisions. | The system is built around structured documents; introducing a schema-less file type breaks the consistency. |
-| Could serve as a personal journal or scratchpad. | The VS Code extension already has a "Chat" panel (Continue, etc.). Why duplicate it in files? |
+## Open questions
+What do you think (be honest)?
+- Is useful?
+- Is clear?
 
-**My recommendation:** **Hold off on this for now.**
+## Next step
+If finally valitated
+- Create a design doc
 
-Here's why:
-1. The core value of Reslava is **structured, stateful collaboration**. Adding a "no rules" document type dilutes that focus.
-2. If a user wants informal chat, they already have Continue's chat panel, which persists history. Adding file-based chat creates redundancy.
-3. If you *really* need a scratchpad that's version-controlled, you can already create an `idea.md` with `status: draft` and just not promote it to a design. It can live in a `_sandbox/` feature folder.
+## Format
+Informal, free-form conversation log. Follows current `-design.md` chats workflow:
 
-**If you still want it later:**
-It's trivial to add. The extension can simply display any `.md` file in `.ws/chats/` as a "Chat" node. No engine changes required. We can revisit this post-MVP.
+```markdown
+# CHAT
+
+## {{UserName}}:  (or User: if not defined)
+...
+
+## {{AI-model}}:  (or AI: if not defined)
+...
+
+```
+
+## Creating a chat and naming
+### New chat (no associated) 
+- an `{name}-chat.md` located at `.ws/chats/` 
+
+### Chat about...
+Linked to an esisting doc, depending on doc type selected 
+- Name `{feature-name}-{type}-chat-NN.md` and located on same `feature/feature-name/`
+
+## Action when Chat closed
+- `{name}-chat.md` located at `.ws/chats/` -> create a new idea
+- `{feature-name}-idea-chat-NN.md` -> refine the parent idea or create a new design
+- `{feature-name}-design-chat-NN.md` -> refine the parent design or create a new plan
+- `{feature-name}-plan-chat-NN.md` -> refine the parent plan
+
+## Workflow
+User can chat (optional becuase there are actions to do that directly) with AI preserving the history of decisions taken between any doc in the chain
+
+[chat ->] idea [<-> chat] -> design [<-> chat] -> plan [<-> chat]
+
+*[] means optional       
+
+- When user start a not linked chat could be to create an idea
+- When user start a chat about an idea could be to refine the idea or to create a new design
+- When user start a chat about a design could be to refine the design or to create a new plan
+- When user start a chat about a plan could be to refine the plan
+
+The user point of view would be: "I want to chat abouut this..." and finally, could:
+- cancel / archive / delete the chat becuase no relevant at all
+- refine the `parent document` or `create a new child of parent`
+- or create a new idea from if no parent
