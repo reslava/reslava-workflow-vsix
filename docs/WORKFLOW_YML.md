@@ -1,14 +1,14 @@
-# Workflow Configuration (`workflow.yml`)
+# Workflow Configuration — `.loom/workflow.yml`
 
-This document defines the declarative schema and capabilities of the `workflow.yml` file. It allows you to customize document types, status transitions, and automated side effects **without writing a single line of TypeScript or touching the core engine.**
+This document defines the declarative schema and capabilities of the `.loom/workflow.yml` file. It allows you to customize document types, status transitions, and automated side effects **without writing a single line of TypeScript or touching the core engine.**
 
 ---
 
 ## 1. Overview
 
-The workflow system comes with a **built-in default workflow** (`idea → design → plan → done`). However, different projects have different processes. You might be writing a blog post, managing a research project, or following a custom QA process.
+REslava Loom comes with a **built‑in default workflow** (`idea → design → plan → done`). However, different projects have different processes. You might be writing a blog post, managing a research project, or following a custom QA process.
 
-By placing a `workflow.yml` file in your workspace, you override the default behavior and define your own domain-specific workflow.
+By placing a `workflow.yml` file in your loom, you override the default behavior and define your own domain‑specific workflow.
 
 **Key Principle:** Configuration over Code. The workflow is defined as data, not logic.
 
@@ -18,10 +18,10 @@ By placing a `workflow.yml` file in your workspace, you override the default beh
 
 The system looks for `workflow.yml` in two locations, with the following precedence:
 
-1.  **Feature-specific:** `features/<feature-name>/workflow.yml` (Highest priority — applies only to that specific feature).
-2.  **Workspace-wide:** `.wf/workflow.yml` (Applies to all features in the workspace).
+1.  **Thread‑specific:** `threads/<thread-name>/workflow.yml` (Highest priority — applies only to that specific thread).
+2.  **Loom‑wide:** `.loom/workflow.yml` (Applies to all threads in the loom).
 
-If no `workflow.yml` is found, the system falls back to the **Built-in Default Workflow** (see Section 7).
+If no `workflow.yml` is found, the system falls back to the **Built‑in Default Workflow** (see Section 7).
 
 ---
 
@@ -52,7 +52,7 @@ Each entry defines a type of document the workflow recognizes.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `type` | `string` | **Yes** | Unique identifier (e.g., `research`, `blog_post`). |
-| `file_pattern` | `string` | **Yes** | Glob/regex to match files relative to the feature root. Use `**/` to match any subdirectory depth. Examples: `"**/*-design.md"`, `"plans/*-plan-*.md"`. |
+| `file_pattern` | `string` | **Yes** | Glob/regex to match files relative to the thread root. Use `**/` to match any subdirectory depth. Examples: `"**/*-design.md"`, `"plans/*-plan-*.md"`. |
 | `statuses` | `string[]` | **Yes** | Allowed status values for this document type. |
 | `initial_status` | `string` | **Yes** | Status assigned when a new document of this type is created. |
 | `parent_of` | `string[]` | No | Types of documents that can list this document as their `parent_id`. |
@@ -85,27 +85,28 @@ Optional rules to maintain consistency across related documents (e.g., "A publis
 
 ## 4. File Patterns & Directory Structure
 
-The `file_pattern` field supports glob syntax and is evaluated **relative to the feature root** (the directory containing the root-type document). This allows flexible organization while maintaining consistent type identification.
+The `file_pattern` field supports glob syntax and is evaluated **relative to the thread root** (the directory containing the primary design document). This allows flexible organization while maintaining consistent type identification.
 
 ### 4.1 Recommended Naming Convention
 
-To make document types immediately recognizable, the default workflow uses a suffix convention:
+REslava Loom uses a suffix convention for document types:
 
 - `*-idea.md` for ideas
-- `*-design.md` for designs
+- `*-design.md` for designs (primary or supporting)
 - `*-plan-*.md` for plans
 - `*-ctx.md` for context summaries
 
-**Example feature directory (Option B):**
+**Example thread directory:**
 ```
-features/payment-system/
+threads/payment-system/
 ├── payment-system-idea.md
 ├── payment-system-design.md
+├── payment-system-design-webhooks.md   # supporting design
 ├── plans/
 │   ├── payment-system-plan-001.md
 │   └── payment-system-plan-002.md
 ├── ctx/
-│   └── payment-system-ctx-2026-04-12.md
+│   └── payment-system-ctx-2026-04-14.md
 └── references/
     └── api-spec.pdf
 ```
@@ -125,7 +126,7 @@ The `**/` prefix ensures the pattern matches documents at any depth, allowing us
 
 The system does **not** enforce a specific physical layout. Users can organize files as they prefer, as long as the `file_pattern` accurately captures the desired files.
 
-**Flat layout (all files in feature root):**
+**Flat layout (all files in thread root):**
 ```yaml
 file_pattern: "*-design.md"
 ```
@@ -135,20 +136,20 @@ file_pattern: "*-design.md"
 file_pattern: "designs/*-design.md"
 ```
 
-The choice is up to the user; the system trusts the frontmatter `type` field for document identification.
+The system trusts the frontmatter `type` field for document identification.
 
 ---
 
 ## 5. Validation Expression Language
 
-The `check` field in `validation` uses a simple, non-Turing-complete expression language to ensure safety.
+The `check` field in `validation` uses a simple, non‑Turing‑complete expression language to ensure safety.
 
 **Available Context Variables:**
-- `document.status` - Status of the current document.
-- `parent.status` - Status of the parent (if `parent_id` exists).
-- `child.status` - Used in loops: `all(child.status == 'done')`.
-- `count(document.children)` - Number of child documents.
-- `actual_release` - App version field (if present).
+- `document.status` – Status of the current document.
+- `parent.status` – Status of the parent (if `parent_id` exists).
+- `child.status` – Used in loops: `all(child.status == 'done')`.
+- `count(document.children)` – Number of child documents.
+- `actual_release` – App version field (if present).
 
 **Operators:** `==`, `!=`, `and`, `or`, `=>` (implies), `matches` (regex)
 
@@ -163,13 +164,13 @@ check: "actual_release == null or actual_release matches '^[0-9]+\\.[0-9]+\\.[0-
 
 ---
 
-## 6. Built-in Effects Library
+## 6. Built‑in Effects Library
 
-Effects are pre-defined, secure actions that execute after a successful state transition. See `EFFECTS.md` for the complete catalog.
+Effects are pre‑defined, secure actions that execute after a successful state transition. See `EFFECTS.md` for the complete catalog.
 
 | Effect Name | Description |
 |-------------|-------------|
-| `increment_version` | Increments the document’s `version` field. |
+| `increment_version` | Increments the document's `version` field. |
 | `mark_children_staled` | Sets `staled: true` on all child documents. |
 | `create_child_document` | Creates a new document of a child type. |
 | `delete_child_documents` | Deletes child documents. |
@@ -178,13 +179,12 @@ Effects are pre-defined, secure actions that execute after a successful state tr
 
 ---
 
-## 7. Built-in Default Workflow (`default-wf.yml`)
+## 7. Built‑in Default Workflow
 
-If no custom `workflow.yml` is provided, the system uses this configuration:
+If no custom `workflow.yml` is provided, the system uses this configuration internally:
 
 ```yaml
-# default-wf.yml
-name: "default-idea-design-plan"
+name: "default-loom-workflow"
 version: 1
 
 documents:
@@ -234,15 +234,6 @@ events:
         child_types: [design, plan]
 
   # Design events
-  - name: CREATE_DESIGN
-    applies_to: design
-    from_status: draft
-    to_status: draft
-    effects:
-      - create_child_document
-        child_type: design
-        template_path: "templates/design-template.md"
-
   - name: ACTIVATE_DESIGN
     applies_to: design
     from_status: draft
@@ -287,7 +278,6 @@ events:
     effects:
       - create_child_document
         child_type: plan
-        template_path: "templates/plan-template.md"
 
   - name: ACTIVATE_PLAN
     applies_to: plan
@@ -392,7 +382,7 @@ validation:
 ## 9. Troubleshooting & Validation
 
 To check if your `workflow.yml` is valid:
-- **CLI:** Run `wf validate-config`.
+- **CLI:** Run `loom validate-config`.
 - **VS Code:** Errors will appear in the Problems panel with line numbers.
 
 **Common Errors:**

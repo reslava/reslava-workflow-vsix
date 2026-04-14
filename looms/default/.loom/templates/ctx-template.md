@@ -2,13 +2,13 @@
 type: ctx
 id: {type-id}
 title: "{Title}"
-status: draft | active | done | cancelled | implementing | implemented
+status: draft | active | done | cancelled
 created: {YYYY-MM-DD}
-version: 1.0.0
+version: 1
 tags: []
 parent_id: {parent-id}              
 child_ids: []                
-requires_load: [] # Required reads for next session. List every doc Id the next session must load before continuing. 
+requires_load: [] # Required reads for next session. List every doc ID the next session must load before continuing. 
 ---
 
 # Session Checkpoint

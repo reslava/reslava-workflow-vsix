@@ -1,14 +1,12 @@
 ---
-type: design
+type: reference
 id: documentation-guide
 title: "Documentation Guide — Writing Conventions & Structure"
 status: active
 created: 2026-04-12
-updated: 2026-04-13
-version: 2
+updated: 2026-04-14
+version: 3
 tags: [documentation, conventions, style-guide]
-parent_id: workflow-design
-child_ids: []
 requires_load: []
 ---
 
@@ -16,11 +14,11 @@ requires_load: []
 
 ## Goal
 
-Define consistent writing conventions, document structure, and formatting standards for all workflow system documentation. This ensures clarity for both human readers and AI collaborators.
+Define consistent writing conventions, document structure, and formatting standards for all REslava Loom documentation. This ensures clarity for both human readers and AI collaborators.
 
 ## Context
 
-The workflow system relies heavily on Markdown documents as the source of truth. Consistent structure improves scannability, enables AI context injection, and maintains professionalism across the project.
+The Loom workflow system relies heavily on Markdown documents as the source of truth. Consistent structure improves scannability, enables AI context injection, and maintains professionalism across the project.
 
 This guide applies to:
 - Project documentation (README, ARCHITECTURE, etc.)
@@ -37,7 +35,7 @@ This guide applies to:
 Sections marked `## User:` and `## AI:` are **direct dialogue**. Write in **first person** as if the participant is speaking.
 
 ```markdown
-## User:
+## Rafa:
 I think we should use PostgreSQL for the primary database.
 
 ## AI:
@@ -46,59 +44,15 @@ I agree. PostgreSQL offers better concurrency and supports advanced features we 
 
 ### Third Person Everywhere Else
 
-All other sections — Goal, Context, Architecture, step descriptions, etc. — are written in **third person** (or neutral narrative voice). This maintains objectivity and professional documentation standards.
+All other sections—Goal, Context, Architecture, step descriptions, etc.—are written in **third person** (or neutral narrative voice). This maintains objectivity and professional documentation standards.
 
 ```markdown
 ## Goal
-Define a clear and extensible model for representing a Feature as a first-class concept.
+Define a clear and extensible model for representing a Thread as a first-class concept.
 
 ## Context
-The system currently represents documents as independent entities. A Feature groups related documents together.
+The system currently represents documents as independent entities. A Thread groups related documents together.
 ```
-
-### Why This Matters
-
-- **Readability:** Readers can instantly distinguish between narrative documentation and actual conversation.
-- **AI Parsing:** LLMs can reliably identify the conversation log versus structural content.
-- **Consistency:** A single voice reduces cognitive load across a large documentation set.
-
----
-
-## Versioning
-
-### Document Version Field
-
-All workflow documents (idea, design, plan, ctx) use a **simple integer** for the `version` field.
-
-```yaml
-version: 1   # initial
-version: 2   # after first refinement
-version: 3   # after second refinement
-```
-
-Semver (`1.0.0`, `1.2.3`) is **not used** for document versions. Documents have no external consumers — the version field communicates only "this has been meaningfully revised N times." An integer is sufficient.
-
-The `REFINE_DESIGN` event increments the version automatically via the `increment_version` effect.
-
-### Application Release Fields
-
-The `target_release` and `actual_release` frontmatter fields **do** use semver — these refer to the application version shipped to real consumers.
-
-```yaml
-target_release: "1.2.0"
-actual_release: "1.2.0"   # set when status → done and feature ships
-```
-
-### Overwrite vs Archive
-
-When a document is refined, **overwrite it**. Git is the history. There is no need for `design-v1.md` sitting next to `design-v2.md`.
-
-| Situation | Action |
-|-----------|--------|
-| Document refined (same direction) | Overwrite — increment `version`, Git tracks the diff |
-| Design direction abandoned (different concept) | Move to `features/_archive/` |
-
-The `_archive/` folder is for **abandoned directions**, not for older versions of current documents. A note in the design's `# CHAT` section explaining why an approach was abandoned is more valuable than a stale archived file.
 
 ---
 
@@ -106,21 +60,20 @@ The `_archive/` folder is for **abandoned directions**, not for older versions o
 
 ### Required Frontmatter Fields
 
-Every workflow document must include YAML frontmatter with at minimum:
+Every Loom document must include YAML frontmatter with at minimum:
 
 | Field | Description |
 |-------|-------------|
-| `type` | Document type (`idea`, `design`, `plan`, `ctx`) |
-| `role` | Design role: `primary` or `supporting` (design documents only) |
-| `id` | Unique identifier (kebab-case, e.g., `payment-system-design`) |
+| `type` | Document type (`idea`, `design`, `plan`, `ctx`, `reference`) |
+| `id` | Unique identifier (kebab-case, e.g., `core-engine-design`) |
 | `title` | Human-readable title in quotes |
 | `status` | Current status (see status reference) |
 | `created` | ISO date `YYYY-MM-DD` |
-| `version` | Integer (1, 2, 3 ...) |
+| `version` | Integer version number |
 | `tags` | Array of relevant tags |
 | `parent_id` | ID of parent document (or `null`) |
 | `child_ids` | Array of child document IDs |
-| `requires_load` | Paths to documents required for AI session context |
+| `requires_load` | Array of document IDs required for AI session context |
 
 ### Body Structure by Document Type
 
@@ -131,7 +84,71 @@ Every workflow document must include YAML frontmatter with at minimum:
 | `plan` | Goal, Steps table, Step details, Legend |
 | `ctx` | Active state, Key decisions, Open questions, Step continuation note |
 
-Templates for each type are available in `.wf/templates/`.
+Templates for each type are available in `.loom/templates/`.
+
+---
+
+## Dependency Tracking in Plans
+
+Plans often have steps that depend on the completion of other steps, either within the same plan or in other plans. To make these dependencies explicit, the steps table includes a **"Blocked by"** column.
+
+### Steps Table Format
+
+```markdown
+| Done | # | Step | Files touched | Blocked by |
+|---|---|---|---|---|
+| 🔳 | 1 | Define TypeScript core types | `packages/core/src/types.ts` | — |
+| 🔳 | 2 | Implement design reducer | `packages/core/src/designReducer.ts` | Step 1 |
+| 🔳 | 3 | Implement plan reducer | `packages/core/src/planReducer.ts` | Step 1 |
+| 🔳 | 4 | Implement applyEvent orchestrator | `packages/core/src/applyEvent.ts` | Steps 2, 3 |
+```
+
+### Dependency Values
+
+| Value | Meaning |
+|-------|---------|
+| `—` | No dependencies; can start immediately. |
+| `Step N` | Blocked until Step N is marked ✅. |
+| `Steps N, M` | Blocked until all listed steps are ✅. |
+| `<plan-id>` | Blocked until the referenced plan has `status: done`. (Used in the first step of a dependent plan.) |
+
+### Human Workflow
+
+1. Review the "Blocked by" column before starting a step.
+2. Verify that all blockers are resolved.
+3. If a blocker is not resolved, work on an unblocked step or pause.
+
+Future versions of `loom status` will highlight blocked steps automatically.
+
+---
+
+## Changelog Sections in Documents
+
+While Git commit history is the ultimate source of truth for changes, **design documents** may benefit from a `## Changelog` section at the end of the document. This provides a human-readable summary of major revisions without requiring readers to dig through Git logs.
+
+### When to Include a Changelog
+
+| Document Type | Include Changelog? | Rationale |
+|---------------|--------------------|-----------|
+| `design` | **Optional, but recommended.** | Designs evolve significantly. A changelog helps readers understand the document's history. |
+| `plan` | **No.** | Plans are execution artifacts. Changes should be captured in Git or by updating the plan itself. |
+| `idea` | **No.** | Ideas are lightweight and short-lived. |
+| `ctx` | **No.** | Context summaries are regenerated; history is in `ctx/` subfolder. |
+| `reference` | **Yes, if versioned.** | References like this guide should track changes for users. |
+
+### Changelog Format
+
+```markdown
+## Changelog
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 3 | 2026-04-14 | Added dependency tracking convention and "Blocked by" column. Clarified changelog usage. |
+| 2 | 2026-04-13 | Added versioning section and `role` frontmatter field. |
+| 1 | 2026-04-12 | Initial documentation guide. |
+```
+
+Keep entries concise—one line summarizing the change.
 
 ---
 
@@ -163,7 +180,7 @@ Specify language for syntax highlighting.
 
 ````markdown
 ```typescript
-function applyEvent(feature: Feature, event: Event): Feature {
+function applyEvent(thread: Thread, event: Event): Thread {
   // ...
 }
 ```
@@ -182,17 +199,9 @@ Use reference-style links for repeated URLs.
 [DeepSeek API]: https://api.deepseek.com/v1
 ```
 
-### Emphasis
-
-- Use `**bold**` for strong emphasis.
-- Use `*italic*` for light emphasis.
-- Use `> ` for blockquotes.
-
 ---
 
 ## Symbols & Legend
-
-The following symbols are used consistently across all documents:
 
 | Symbol | Meaning |
 |--------|---------|
@@ -205,21 +214,17 @@ The following symbols are used consistently across all documents:
 | 🟡 | High priority |
 | 🟢 | Nice-to-have |
 
-A legend should be included in any document that uses these symbols in tables (e.g., plan step tables).
-
 ---
 
 ## Naming Conventions
 
 | Element | Convention | Example |
 |---------|------------|---------|
-| Document IDs | kebab-case | `payment-system-design` |
-| Feature IDs | kebab-case | `payment-system` |
-| Primary design filename | `{feature-id}-design.md` | `payment-system-design.md` |
-| Supporting design filename | `{feature-id}-design-{topic}.md` | `payment-system-design-webhooks.md` |
-| Plan filename | `{feature-id}-plan-{NNN}.md` | `payment-system-plan-001.md` |
+| Document IDs | kebab-case | `core-engine-design` |
+| Thread IDs | kebab-case | `payment-system` |
+| File names | kebab-case with type suffix | `payment-system-plan-001.md` |
 | Event names | SCREAMING_SNAKE_CASE | `REFINE_DESIGN` |
-| CLI commands | kebab-case | `wf ai respond` |
+| CLI commands | kebab-case | `loom ai respond` |
 
 ---
 
@@ -231,13 +236,12 @@ When writing documentation intended for AI consumption:
 2. **Use structured sections.** AI models attend more strongly to headers.
 3. **Include examples.** Concrete examples improve response accuracy.
 4. **Specify the mode.** Indicate whether the AI should respond in Chat Mode (natural language) or Action Mode (JSON proposal).
-5. **Use `requires_load`.** List every document path the AI needs before it can continue meaningfully. Use full paths relative to workspace root: `references/workspace-directory-structure-reference.md`.
 
 ---
 
 ## Templates
 
-Reference templates are located in `.wf/templates/`:
+Reference templates are located in `.loom/templates/`:
 
 - `idea-template.md`
 - `design-template.md`
@@ -252,5 +256,6 @@ When creating a new document, copy the appropriate template and fill in placehol
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 3 | 2026-04-14 | Added dependency tracking convention with "Blocked by" column. Added guidance on changelog usage in documents. |
+| 2 | 2026-04-13 | Added versioning section (integer vs semver, overwrite vs archive). Added `role` to required frontmatter fields. Updated naming conventions with primary/supporting design patterns. Updated `requires_load` guidance to use full paths. |
 | 1 | 2026-04-12 | Initial documentation guide. |
-| 2 | 2026-04-13 | Added Versioning section (integer vs semver, overwrite vs archive). Added `role` to required frontmatter fields. Updated naming conventions with primary/supporting design patterns. Updated `requires_load` guidance to use full paths. |

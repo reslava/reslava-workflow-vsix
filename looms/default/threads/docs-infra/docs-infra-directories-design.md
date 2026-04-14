@@ -1,453 +1,168 @@
 ---
 type: design
-id: workflow-docs-directories-design
-title: "Workflow Documents Directory Structure"
+id: docs-infra-directories-design
+title: "Workspace Directory Structure — REslava Loom"
 status: active
 created: 2026-04-12
-version: 1.0.0
-tags: [structure, directories, filesystem, organization]
-parent_id: workflow-design-v2
+updated: 2026-04-14
+version: 2
+tags: [structure, directories, filesystem, organization, loom]
+parent_id: core-engine-design
 child_ids: []
 requires_load: []
+target_release: "0.1.0"
+actual_release: null
 ---
 
-# Workflow Documents Directory Structure
+# Workspace Directory Structure — REslava Loom
 
 ## Goal
 
-Define a clear, scalable, and intuitive directory layout for organizing workflow documents (ideas, designs, plans, contexts, references) within a project workspace. The structure must support both feature-centric grouping and cross-cutting reference materials while remaining compatible with Git and the VS Code extension's tree view.
+Define a clear, scalable, and intuitive directory layout for organizing REslava Loom documents (ideas, designs, plans, contexts, chats, references) within a project workspace. The structure must support both mono‑loom and multi‑loom modes while remaining compatible with Git and the VS Code extension's tree view.
 
 ## Context
 
-The workflow system treats Markdown files as the primary data store. The physical arrangement of these files affects:
+The Loom system treats Markdown files as the primary data store. The physical arrangement affects:
 
-- **Discoverability:** How easily a user can locate a specific feature's documents.
-- **Derived Feature Resolution:** The algorithm that groups documents into Features relies on parsing `parent_id` fields, not directory location. However, the directory structure can reinforce the logical grouping.
-- **Reference Management:** Shared resources (images, external docs, research) may be global or feature-specific.
-- **Scalability:** The layout should accommodate hundreds of features without becoming unwieldy.
+- **Discoverability:** How easily a user locates a specific thread's documents.
+- **Derived Thread Resolution:** The algorithm groups documents into Threads via `parent_id` links, not directory location. However, the directory structure reinforces logical grouping.
+- **Reference Management:** Shared resources may be global or thread‑specific.
+- **Scalability:** The layout accommodates many threads without becoming unwieldy.
 
-Two primary organizational models have been considered:
+Two organizational models were evaluated:
 
-1. **Type‑Based Grouping:** All documents of a given type reside in a single top‑level folder (e.g., `designs/`, `plans/`). This is flat and simple but scatters related documents across the filesystem.
-2. **Feature‑Based Grouping:** Each feature resides in its own folder containing all related documents (design, plans, ideas, references). This co‑locates everything for a feature but may complicate sharing references.
+1. **Type‑Based Grouping:** All documents of a given type in top‑level folders (`designs/`, `plans/`). Flat but scatters related documents.
+2. **Thread‑Based Grouping:** Each thread in its own folder containing all related documents. Co‑locates everything for a thread.
 
-This document will evaluate the trade‑offs and propose a final directory layout.
+This document records the decision and the final directory layout.
 
 # CHAT
 
-## User:
-I'm unsure about the final directory structure. Before we had docs grouped by type: `wf/designs/`, `wf/ideas/`, `wf/plans/`, `wf/references/`. Now we're moving to grouping by feature, e.g., `wf/featureA/designs/`, `wf/featureA/plans/`. But we also need a place for references that are common to all features. I think we need a deep design on this before implementing. Let's discuss options and decide.
+## Rafa:
+I'm unsure about the final directory structure. Before we had docs grouped by type. Now we're moving to grouping by thread. We also need places for global references and chats. Let's decide.
 
 ## AI:
-You're right to pause and design this carefully. The directory structure is the first thing users will see, and it influences how they think about the system.
+Option B (Thread‑Based) is the clear winner. It co‑locates all documents for a thread, making archiving and navigation intuitive. The VS Code tree view will align with this physical layout.
 
-Let's start by outlining the functional requirements for the layout:
-
-1. **Feature Isolation:** All documents belonging to a single logical feature should be easily identifiable and co‑located for copying, archiving, or sharing.
-2. **Type Identification:** The system (and users) need to know a document's type. Currently, this is stored in frontmatter (`type: design`), so the filename and directory do **not** dictate type. This gives us flexibility.
-3. **Reference Management:** There are two kinds of references:
-   - **Feature‑specific:** Images, PDFs, or notes that are only relevant to one feature.
-   - **Global:** Style guides, architecture decision records, research that apply across the project.
-4. **Scalability:** Flat folders with hundreds of files become unusable. Grouping by feature creates many subdirectories, which is generally more scalable in modern filesystems and Git.
-5. **Derived Feature Algorithm Independence:** The `Feature` aggregate is built by traversing `parent_id` links. The physical layout is a convenience, not a hard requirement. This allows us to change the layout later without breaking the data model.
-
-Given these, I see three viable layout patterns. Let's compare them.
-
-### Option A: Type‑Based (Flat)
+### 1. Final Directory Structure (Multi‑Loom)
 
 ```
-.wf/                        # All workflow data
-├── ideas/
-│   └── add-dark-mode.md
-├── designs/
-│   └── payment-system.md
-├── plans/
-│   ├── plan-001.md
-│   └── plan-002.md
-├── ctx/
-│   └── payment-system-ctx.md
-└── references/
-    ├── global/
-    └── feature-a/
+~/.loom/config.yaml                           # Global registry (multi‑loom only)
+
+~/looms/<loom-name>/                          # A single loom workspace
+│
+├── .loom/                                    # Local configuration (committed)
+│   ├── workflow.yml                          # Custom workflow (falls back to built‑in)
+│   ├── templates/                            # Document templates
+│   ├── prompts/                              # AI session prompts
+│   ├── schemas/                              # JSON Schemas
+│   └── cache/                                # Derived state cache (Git‑ignored)
+│
+├── chats/                                    # Active, informal AI chats
+│   └── 2026-04-14-auth-debate.md
+│
+├── threads/                                  # All active threads
+│   ├── payment-system/
+│   │   ├── payment-system-idea.md
+│   │   ├── payment-system-design.md          # PRIMARY design (role: primary)
+│   │   ├── payment-system-design-webhooks.md # SUPPORTING design
+│   │   ├── payment-system-ctx.md             # Auto‑generated summary
+│   │   ├── plans/
+│   │   │   ├── payment-system-plan-001.md
+│   │   │   └── payment-system-plan-002.md
+│   │   ├── ctx/                              # Manual session checkpoints
+│   │   └── references/                       # Thread‑specific references
+│   ├── user-auth/
+│   └── _archive/                             # Completed / abandoned
+│       ├── threads/
+│       │   ├── done/
+│       │   ├── cancelled/
+│       │   ├── postponed/
+│       │   └── superseded/
+│       └── chats/                            # Archived chats (with metadata)
+│
+├── references/                               # Global references
+│   ├── style-guide.md
+│   ├── adr/
+│   └── workspace-directory-structure-reference.md
+│
+├── .gitignore
+├── package.json
+└── src/                                      # Application code
 ```
 
-**Pros:** Simple to implement, no nested folders.
-**Cons:** Scatters related documents; feature grouping must be inferred solely from `parent_id`; does not visually reinforce the Feature concept.
+### 2. Mono‑Loom Mode (In‑Project)
 
-### Option B: Feature‑Based (Nested)
-
-```
-.wf/features/               # All features live here
-├── payment-system/
-│   ├── design.md           # The anchor document
-│   ├── idea.md             # Optional precursor
-│   ├── plans/
-│   │   ├── plan-001.md
-│   │   └── plan-002.md
-│   ├── ctx/
-│   │   └── session-2026-04-12.md
-│   └── references/         # Feature-specific references
-│       └── api-spec.pdf
-├── user-auth/
-│   ├── design.md
-│   └── ...
-└── _archive/               # Completed/abandoned features
-    └── old-checkout/
-.wf/references/             # Global references shared by all features
-    ├── style-guide.md
-    └── adr/
-```
-
-**Pros:** Clear co‑location of all feature documents; easy to archive or move a feature; visually reinforces the Feature as a first‑class concept; supports feature‑specific references.
-**Cons:** Slightly deeper paths; requires a separate location for global references.
-
-### Option C: Hybrid (Type Subfolders within Feature)
-
-This is a variation of Option B where, inside the feature folder, we still have type subfolders:
+When Loom is used within an existing project (no global registry), the `.loom/` directory, `chats/`, `threads/`, and `references/` live at the project root alongside `src/`.
 
 ```
-.wf/features/payment-system/
-├── designs/
-│   └── main.md
-├── plans/
-│   ├── plan-001.md
-│   └── plan-002.md
-├── ideas/
-│   └── initial.md
-└── references/
+~/dev/my-app/
+├── .loom/
+├── chats/
+├── threads/
+├── references/
+├── src/
+├── package.json
+└── .gitignore
 ```
 
-**Pros:** Even more explicit type separation within a feature; might feel familiar to users coming from Option A.
-**Cons:** Adds an extra level of nesting; the system must scan subdirectories to find the design document; increases complexity of `loadFeature`.
+### 3. Key Naming Conventions (Suffixes)
 
-### Preliminary Recommendation
+| Document Type | Filename Pattern | Example |
+|---------------|-----------------|---------|
+| Idea | `*-idea.md` | `payment-system-idea.md` |
+| Design (primary) | `*-design.md` | `payment-system-design.md` |
+| Design (supporting) | `*-design-{topic}.md` | `payment-system-design-webhooks.md` |
+| Plan | `*-plan-*.md` | `payment-system-plan-001.md` |
+| Context summary | `*-ctx.md` | `payment-system-ctx.md` |
+| Session checkpoint | `*-ctx-{date}.md` | `payment-system-ctx-2026-04-14.md` |
+| Chat | `YYYY-MM-DD-topic.md` | `2026-04-14-auth-debate.md` |
 
-**Option B (Feature‑Based, flat inside feature folder)** strikes the best balance. It places `design.md` at the feature root, making it the obvious anchor. Plans, ideas, and contexts can be directly in the feature folder or in subfolders (`plans/`). Since the system identifies documents by frontmatter `type`, the filename and location are flexible. For example, `plan-*.md` files could live in a `plans/` subfolder for tidiness, but the system could also find them at the feature root.
+### 4. Design Roles
 
-Let's refine the exact structure of a feature directory. Some open questions:
-
-- Should `design.md` be mandatory at the feature root? (Yes, as the anchor)
-- Should we allow multiple design documents per feature? (Probably not; that's an Epic)
-- Where do `idea.md` files live? (At feature root or in `ideas/` subfolder?)
-- How do we handle features that start as an idea before a design exists? (Maybe the feature folder is created when the idea is promoted, or the idea lives in a global `ideas/` staging area.)
-
-What are your thoughts on these questions? Do you have a preference among the options?
-
-## User:
-
-I prefer Option B because devs think in features when develop and the vsix UX will align by default with tree.
-
-## User:
-
-I think using this structure together with custom workflows might conflict.
-What you think?
-Suggestions?
-
-## AI:
-
-You raise an important point. The physical directory structure (Option B) and custom workflows (`workflow.yml`) serve different but overlapping purposes. Let's analyze potential conflicts and how to mitigate them.
-
-### Potential Conflicts
-
-| Concern | Description | Mitigation |
-|---------|-------------|------------|
-| **Document discovery vs. `file_pattern`** | Custom workflows define `file_pattern` (e.g., `"design.md"`, `"plan-*.md"`). If the directory structure places files in subfolders (e.g., `plans/plan-001.md`), the pattern must account for that (e.g., `"plans/plan-*.md"`). | In `workflow.yml`, `file_pattern` can include paths relative to the feature root. Users can specify `"plans/*.md"` to match files in the `plans/` subdirectory. |
-| **Feature root identification** | The system needs to know the feature root directory to resolve relative paths. Option B assumes the feature root is the folder containing `design.md`. Custom workflows might define a different anchor document. | The system can identify the feature root as the directory containing the document that matches the `child_of: null` or is the designated root type (e.g., `design`). This is independent of the exact folder name. |
-| **Multiple designs per feature** | Custom workflows could theoretically allow multiple `design` documents in one feature folder, which would break the 1:1 feature:design assumption. | Validation rule: only one document of the root type per feature directory, or the feature model must be extended to support multiple root documents (epics). For MVP, enforce one root document per feature folder. |
-| **Nested features** | Users might want sub-features inside a feature folder. Option B doesn't explicitly support this. | The system can treat any subdirectory containing a root document as a separate feature. The VS Code tree view can display hierarchical features if `parent_id` links are used. |
-
-### Recommendations
-
-1. **Keep the physical structure flexible.** The system should not hardcode assumptions like "design.md is at the feature root." Instead, it should identify features by finding documents that satisfy the root type defined in the active workflow (e.g., the document type with `child_of: null` or no parent). This allows users to organize files as they prefer, as long as the frontmatter relationships are correct.
-
-2. **Document best practices.** Provide examples in `WORKFLOW_YML.md` showing how to configure `file_pattern` for common directory layouts (flat, nested, etc.). Encourage users to adopt Option B as the recommended layout for new projects.
-
-3. **Validation helper.** Add a `wf validate --fix-structure` command that can suggest moving files to match the expected layout based on `workflow.yml` patterns, reducing manual effort.
-
-4. **Avoid over-engineering for MVP.** Start with a simple discovery algorithm: scan the entire `.wf/features/` directory recursively, parse all Markdown files with frontmatter, and build the feature graph from `parent_id` links. The physical layout is just a hint for humans; the system trusts the frontmatter.
-
-### Conclusion
-
-Option B and custom workflows are compatible if the system relies on frontmatter relationships rather than directory position. The key is to make `file_pattern` in `workflow.yml` flexible enough to accommodate subdirectories. With proper documentation, users can confidently organize their features without fear of breaking the system.
-
-## User:
-
-So we can solve this issue by adapting the `workflow.yml`
-
-### TODO
-
-all docs sufixs are `-{type}.md`, so default workflow shoul be:
-```yaml
-documents:
-  - type: idea
-    file_pattern: "-idea.md"
-    statuses: [draft, active, done, cancelled]
-    initial_status: draft
-    parent_of: [design]
-    version_field: "version"
-    staled_field: "staled"
-
-  - type: design
-    file_pattern: "-design.md"
-    statuses: [draft, active, closed, done, cancelled]
-    initial_status: draft
-    parent_of: [plan]
-    child_of: idea
-    version_field: "version"
-    staled_field: "staled"
-
-  - type: plan
-    file_pattern: "plans/-plan-*.md"
-```    
-- Agree?
-
-- If so update `default-wf.yaml`
-
-## AI:
-
-```markdown
-## AI:
-Yes, I agree with the suffix convention. Using `-{type}.md` (e.g., `payment-system-design.md`, `payment-system-idea.md`, `plans/payment-system-plan-001.md`) provides several benefits:
-
-- **Immediate visual identification** of document type without opening the file.
-- **Reduced ambiguity** when multiple document types exist in the same directory.
-- **Simplified file patterns** in `workflow.yml` because the suffix acts as a natural discriminator.
-
-### Updated `default-wf.yml` Document Patterns
-
-Below is the revised `documents` section for `default-wf.yml` that incorporates the suffix convention and supports the recommended directory structure (Option B). The patterns use `**/` to match files at any depth under the feature root, giving users flexibility to place documents in subdirectories like `plans/` or `ctx/`.
+Each thread has exactly **one primary design** (anchor) and any number of **supporting designs**.
 
 ```yaml
-documents:
-  - type: idea
-    file_pattern: "**/*-idea.md"
-    statuses: [draft, active, done, cancelled]
-    initial_status: draft
-    parent_of: [design]
-    version_field: "version"
-    staled_field: "staled"
-
-  - type: design
-    file_pattern: "**/*-design.md"
-    statuses: [draft, active, closed, done, cancelled]
-    initial_status: draft
-    parent_of: [plan]
-    child_of: idea
-    version_field: "version"
-    staled_field: "staled"
-
-  - type: plan
-    file_pattern: "**/*-plan-*.md"
-    statuses: [draft, active, implementing, done, blocked, cancelled]
-    initial_status: draft
-    child_of: design
-    version_field: "version"
-    staled_field: "staled"
-
-  - type: ctx
-    file_pattern: "**/*-ctx.md"
-    statuses: [draft, active, done, cancelled]
-    initial_status: draft
-    child_of: design   # or could be standalone
-    version_field: "version"
-    staled_field: "staled"
+role: primary      # Required, one per thread
+role: supporting   # Optional, many allowed
 ```
 
-### Important Implementation Note
+### 5. Context Files: Two Distinct Purposes
 
-The `file_pattern` should be evaluated **relative to the feature root**, not the workspace root. The feature root is determined as the directory containing the design document (or the root-type document). When scanning for documents, the system should traverse subdirectories and match patterns accordingly.
+| File | Location | Purpose | Lifecycle |
+|------|----------|---------|-----------|
+| `*-ctx.md` | Thread root | Auto‑generated summary of current design state | Overwritten on each generation |
+| `*-ctx-{date}.md` | `ctx/` subfolder | Manual session checkpoint | Permanent record |
 
-For example, with the pattern `**/*-design.md` and a feature root `features/payment-system/`, the file `features/payment-system/payment-system-design.md` will match, as will `features/payment-system/designs/main-design.md`.
+### 6. Chat Files: Lightweight AI Conversations
 
-### Update `default-wf.yml` File
+| Directory | Purpose | Lifecycle |
+|-----------|---------|-----------|
+| `chats/` (loom root) | Active, unused chats | Created manually or via `loom chat new` |
+| `_archive/chats/` | Archived chats after being used | Moved automatically when consumed; injected with metadata |
 
-I'll now provide the complete updated `default-wf.yml` with the new document patterns and the previously defined events and validation rules. This file can replace the existing one in the repository.
+### 7. Important Files Explained
 
-```yaml
-# default-wf.yml
-# Built‑in workflow for idea → design → plan → done
-name: "default-idea-design-plan"
-version: 1
+| Path | Purpose |
+|------|---------|
+| `~/.loom/config.yaml` | Global registry of all looms (multi‑loom only). |
+| `.loom/workflow.yml` | Custom workflow (overrides built‑in default). |
+| `.loom/templates/` | Scaffolding templates for `loom weave`. |
+| `.loom/prompts/SESSION_START.md` | Bootstrap prompt for AI context. |
+| `.loom/cache/` | Local derived state cache (Git‑ignored). |
+| `chats/` | Active, informal AI conversations. |
+| `threads/<thread>/` | One directory per thread. |
+| `threads/<thread>/*-design.md` | PRIMARY design — anchor document. |
+| `threads/<thread>/plans/` | Implementation plans. |
+| `threads/<thread>/ctx/` | Manual session checkpoints — historical archive. |
+| `threads/_archive/` | Completed / abandoned threads and used chats. |
+| `references/` | Global documents shared across threads. |
 
-documents:
-  - type: idea
-    file_pattern: "**/*-idea.md"
-    statuses: [draft, active, done, cancelled]
-    initial_status: draft
-    parent_of: [design]
-    version_field: "version"
-    staled_field: "staled"
+## Decision
 
-  - type: design
-    file_pattern: "**/*-design.md"
-    statuses: [draft, active, closed, done, cancelled]
-    initial_status: draft
-    parent_of: [plan]
-    child_of: idea
-    version_field: "version"
-    staled_field: "staled"
+Adopt the thread‑based directory structure (Option B) with support for both mono‑loom and multi‑loom modes. Use suffix naming conventions for document types. Keep chats in a dedicated `chats/` directory and archive them after use.
 
-  - type: plan
-    file_pattern: "**/*-plan-*.md"
-    statuses: [draft, active, implementing, done, blocked, cancelled]
-    initial_status: draft
-    child_of: design
-    version_field: "version"
-    staled_field: "staled"
+## Next Steps
 
-  - type: ctx
-    file_pattern: "**/*-ctx.md"
-    statuses: [draft, active, done, cancelled]
-    initial_status: draft
-    child_of: design
-    version_field: "version"
-    staled_field: "staled"
-
-events:
-  # Idea events
-  - name: ACTIVATE_IDEA
-    applies_to: idea
-    from_status: draft
-    to_status: active
-    effects: []
-
-  - name: COMPLETE_IDEA
-    applies_to: idea
-    from_status: active
-    to_status: done
-    effects: []
-
-  - name: CANCEL_IDEA
-    applies_to: idea
-    from_status: [draft, active]
-    to_status: cancelled
-    effects:
-      - delete_child_documents
-        child_types: [design, plan]
-
-  # Design events
-  - name: CREATE_DESIGN
-    applies_to: design
-    from_status: draft
-    to_status: draft
-    effects:
-      - create_child_document
-        child_type: design
-        template_path: "templates/design-template.md"
-
-  - name: ACTIVATE_DESIGN
-    applies_to: design
-    from_status: draft
-    to_status: active
-    effects: []
-
-  - name: CLOSE_DESIGN
-    applies_to: design
-    from_status: active
-    to_status: closed
-    effects: []
-
-  - name: REOPEN_DESIGN
-    applies_to: design
-    from_status: closed
-    to_status: active
-    effects: []
-
-  - name: REFINE_DESIGN
-    applies_to: design
-    from_status: [active, closed, done]
-    to_status: active
-    effects:
-      - increment_version
-      - mark_children_staled
-
-  - name: FINALISE_DESIGN
-    applies_to: design
-    from_status: active
-    to_status: done
-    effects: []
-
-  - name: CANCEL_DESIGN
-    applies_to: design
-    from_status: [draft, active, closed]
-    to_status: cancelled
-    effects:
-      - delete_child_documents
-        child_types: [plan]
-
-  # Plan events
-  - name: CREATE_PLAN
-    applies_to: design
-    from_status: done
-    to_status: done
-    effects:
-      - create_child_document
-        child_type: plan
-        template_path: "templates/plan-template.md"
-
-  - name: ACTIVATE_PLAN
-    applies_to: plan
-    from_status: draft
-    to_status: active
-    effects: []
-
-  - name: START_IMPLEMENTING_PLAN
-    applies_to: plan
-    from_status: active
-    to_status: implementing
-    effects: []
-
-  - name: COMPLETE_STEP
-    applies_to: plan
-    from_status: implementing
-    to_status: implementing
-    effects:
-      - increment_step_counter
-
-  - name: FINISH_PLAN
-    applies_to: plan
-    from_status: implementing
-    to_status: done
-    effects: []
-
-  - name: BLOCK_PLAN
-    applies_to: plan
-    from_status: [active, implementing]
-    to_status: blocked
-    effects:
-      - send_notification
-        message: "Plan blocked, awaiting resolution"
-        severity: warning
-
-  - name: UNBLOCK_PLAN
-    applies_to: plan
-    from_status: blocked
-    to_status: active
-    effects: []
-
-  - name: CANCEL_PLAN
-    applies_to: plan
-    from_status: [draft, active, implementing, blocked]
-    to_status: cancelled
-    effects: []
-
-validation:
-  - rule: "Plan cannot be active if its design is not done"
-    check: "plan.status == 'active' => design.status == 'done'"
-  - rule: "Design cannot be done if it has no plans"
-    check: "design.status == 'done' => count(design.plans) > 0"
-  - rule: "Public docs must not be stale when design version changes"
-    check: "design.version == child.source_version"
-  - rule: "actual_release must be a valid semver or null"
-    check: "actual_release == null or actual_release matches '^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9\\.]+)?(\\+[a-zA-Z0-9\\.]+)?$'"
-  - rule: "actual_release should only be set when status is done"
-    check: "actual_release == null or status == 'done'"
-```
-
-### Next Steps
-
-1. **Replace `default-wf.yml`** in the repository with the updated version above.
-2. **Update document templates** to reflect the suffix naming convention in examples and placeholder filenames.
-3. **Document the file pattern flexibility** in `WORKFLOW_YML.md` so users understand how to customize for their own layouts.
-
-This update aligns the default configuration with the proposed directory structure while maintaining full backward compatibility for users who choose different naming conventions.
+- Document the final structure in `references/workspace-directory-structure-reference.md`.
+- Update templates and CLI commands to reflect this layout.

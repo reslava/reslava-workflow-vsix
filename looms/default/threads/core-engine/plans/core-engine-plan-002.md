@@ -1,162 +1,322 @@
 ---
 type: plan
-id: workflow-plan-002
-title: "Filesystem Integration (Markdown Load/Save)"
-status: active
+id: core-engine-plan-002
+title: "Filesystem Integration — Markdown Load and Save"
+status: draft
 created: 2026-04-10
-version: 1
-tags: [workflow, filesystem, markdown]
-design_id: workflow-design
-target_version: 0.2.0
-requires_load: []
+updated: 2026-04-14
+version: 2
+design_version: 3
+tags: [loom, core, filesystem, markdown, io]
+parent_id: core-engine-design
+target_version: "0.2.0"
+requires_load: [core-engine-design]
 ---
 
-# Feature — Filesystem Integration (Markdown Load/Save)
+# Plan — Filesystem Integration (Markdown Load/Save)
 
 | | |
 |---|---|
 | **Created** | 2026-04-10 |
+| **Updated** | 2026-04-14 |
 | **Status** | DRAFT |
-| **Design** | `workflow-design.md` |
+| **Design** | `core-engine-design.md` (v3) |
 | **Target version** | 0.2.0 |
 
 ---
 
 # Goal
 
-Connect the core workflow engine to the filesystem using Markdown files as the database.
+Connect the core Loom engine to the filesystem using Markdown files as the database.
 
 This includes:
 - loading documents from disk
 - parsing frontmatter
 - saving updated documents
-- mapping folder structure to Feature model
+- mapping folder structure to the Thread model
 
-This step transforms the system from in-memory logic into a real, persistent workflow engine.
+This step transforms the system from in‑memory logic into a persistent, real‑world workflow engine.
 
 ---
 
 # Steps
 
-| # | Done | Step | Files touched |
-|---|---|---|---|
-| 1 | — | Setup filesystem utilities | `wf/fs/utils.ts` |
-| 2 | — | Implement loadDoc (Markdown + frontmatter) | `wf/fs/load.ts` |
-| 3 | — | Implement saveDoc (Markdown writer) | `wf/fs/save.ts` |
-| 4 | — | Implement loadFeature | `wf/fs/loadFeature.ts` |
-| 5 | — | Implement saveFeature | `wf/fs/saveFeature.ts` |
-| 6 | — | Integrate with core engine | `wf/runEvent.ts` |
-| 7 | — | Test with real feature folder | `features/featureA/*` |
+| Done | # | Step | Files touched | Blocked by |
+|---|---|---|---|---|
+| 🔳 | 1 | Setup filesystem utilities | `packages/fs/src/utils.ts` | `core-engine-plan-001` |
+| 🔳 | 2 | Implement `loadDoc` (Markdown + frontmatter) | `packages/fs/src/load.ts` |
+| 🔳 | 3 | Implement `saveDoc` (Markdown writer) | `packages/fs/src/save.ts` |
+| 🔳 | 4 | Implement `loadThread` | `packages/fs/src/loadThread.ts` |
+| 🔳 | 5 | Implement `saveThread` | `packages/fs/src/saveThread.ts` |
+| 🔳 | 6 | Integrate with core engine | `packages/fs/src/runEvent.ts` |
+| 🔳 | 7 | Test with real thread folder | `looms/test/threads/example/` |
 
 ---
 
-## Step 1 — Setup filesystem utilities
+## Step 1 — Setup Filesystem Utilities
 
-Define helpers:
-- resolve feature path
-- normalize file paths
-- ensure directories exist
+**File:** `packages/fs/src/utils.ts`
 
-Base structure:
+Define helpers for path resolution and directory operations.
 
-features/
-  feature-id/
-    idea.md
-    design.md
-    plans/
-      plan-001.md
+```typescript
+import * as path from 'path';
+import * as fs from 'fs-extra';
 
----
-
-## Step 2 — Implement loadDoc (Markdown + frontmatter)
-
-Use a library (e.g. gray-matter) to:
-- read file
-- parse frontmatter
-- return object:
-
-{
-  ...frontmatter,
-  content
+export function getActiveLoomRoot(): string {
+  // First check for global registry (~/.loom/config.yaml)
+  // If not found, look for .loom/ in current directory or ancestors
+  // Fallback to process.cwd()
+  // (Implementation details to be filled)
+  return process.cwd();
 }
 
-Ensure compatibility with existing templates.
-
----
-
-## Step 3 — Implement saveDoc (Markdown writer)
-
-Serialize:
-- frontmatter
-- content
-
-Write back to disk preserving:
-- readability
-- consistent formatting
-
----
-
-## Step 4 — Implement loadFeature
-
-Load:
-- idea.md
-- design.md
-- all plans/*.md
-
-Return Feature object:
-{
-  idea,
-  design,
-  plans[]
+export function resolveThreadPath(threadId: string): string {
+  const loomRoot = getActiveLoomRoot();
+  return path.join(loomRoot, 'threads', threadId);
 }
 
-Handle:
-- missing files gracefully
-- empty plans directory
+export async function ensureDir(dirPath: string): Promise<void> {
+  await fs.ensureDir(dirPath);
+}
+
+export function generatePlanId(threadId: string, existingPlans: string[]): string {
+  const prefix = `${threadId}-plan-`;
+  const numbers = existingPlans
+    .map(p => p.match(/-plan-(\d+)\.md$/)?.[1])
+    .filter(Boolean)
+    .map(Number);
+  const next = numbers.length ? Math.max(...numbers) + 1 : 1;
+  return `${prefix}${String(next).padStart(3, '0')}`;
+}
+```
 
 ---
 
-## Step 5 — Implement saveFeature
+## Step 2 — Implement `loadDoc` (Markdown + frontmatter)
 
-Persist full feature:
-- overwrite idea.md
-- overwrite design.md
-- write each plan file
+**File:** `packages/fs/src/load.ts`
 
-Ensure:
-- directories exist
-- no data loss
+Use `gray-matter` to parse frontmatter and content.
+
+```typescript
+import matter from 'gray-matter';
+import * as fs from 'fs-extra';
+import { Document } from '../../core/src/types';
+
+export async function loadDoc(filePath: string): Promise<Document> {
+  const content = await fs.readFile(filePath, 'utf8');
+  const parsed = matter(content);
+  
+  const doc = {
+    ...parsed.data,
+    content: parsed.content,
+    _path: filePath,
+  } as Document;
+
+  // Parse steps for plan documents
+  if (doc.type === 'plan' && parsed.content) {
+    doc.steps = parseStepsTable(parsed.content);
+  }
+
+  return doc;
+}
+
+function parseStepsTable(content: string): any[] {
+  // Parse the markdown table in the Steps section
+  // Return array of { order, description, done, files_touched }
+  // (Implementation to be filled)
+  return [];
+}
+```
 
 ---
 
-## Step 6 — Integrate with core engine
+## Step 3 — Implement `saveDoc` (Markdown writer)
 
-Create:
+**File:** `packages/fs/src/save.ts`
 
-runEvent(featureId, event)
+Serialize document back to Markdown, preserving readability.
 
-Flow:
-1. loadFeature
-2. applyEvent
-3. saveFeature
-4. (optional) run effects
+```typescript
+import matter from 'gray-matter';
+import * as fs from 'fs-extra';
+import { Document } from '../../core/src/types';
+
+export async function saveDoc(doc: Document, filePath: string): Promise<void> {
+  const { content, _path, ...frontmatter } = doc as any;
+  
+  // For plan documents, regenerate steps table
+  let bodyContent = content;
+  if (doc.type === 'plan' && doc.steps) {
+    bodyContent = generateStepsTable(doc.steps, content);
+  }
+
+  const output = matter.stringify(bodyContent, frontmatter);
+  await fs.ensureDir(path.dirname(filePath));
+  await fs.writeFile(filePath, output);
+}
+
+function generateStepsTable(steps: any[], originalContent: string): string {
+  // Replace or append steps table in content
+  // (Implementation to be filled)
+  return originalContent;
+}
+```
 
 ---
 
-## Step 7 — Test with real feature folder
+## Step 4 — Implement `loadThread`
 
-Create a sample feature:
+**File:** `packages/fs/src/loadThread.ts`
 
-features/featureA/
-  idea.md
-  design.md
-  plans/plan-001.md
+Load all documents for a given thread ID.
 
-Test:
-- loading
-- applying events
-- saving updates
+```typescript
+import * as path from 'path';
+import * as fs from 'fs-extra';
+import { Thread, Document } from '../../core/src/types';
+import { loadDoc } from './load';
+import { resolveThreadPath } from './utils';
 
-Verify:
-- Markdown integrity
-- correct state transitions
+export async function loadThread(threadId: string): Promise<Thread> {
+  const threadPath = resolveThreadPath(threadId);
+  
+  const docs: Document[] = [];
+  
+  // Recursively find all .md files
+  const files = await findMarkdownFiles(threadPath);
+  
+  for (const file of files) {
+    const doc = await loadDoc(file);
+    docs.push(doc);
+  }
+
+  const design = docs.find(d => d.type === 'design' && d.role === 'primary') as any;
+  if (!design) {
+    throw new Error(`No primary design found for thread '${threadId}'`);
+  }
+
+  const idea = docs.find(d => d.type === 'idea') as any;
+  const plans = docs.filter(d => d.type === 'plan') as any[];
+  const contexts = docs.filter(d => d.type === 'ctx') as any[];
+
+  return {
+    id: threadId,
+    idea,
+    design,
+    plans,
+    contexts,
+    allDocs: docs,
+  };
+}
+
+async function findMarkdownFiles(dir: string): Promise<string[]> {
+  const result: string[] = [];
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory() && entry.name !== '_archive') {
+      result.push(...await findMarkdownFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      result.push(fullPath);
+    }
+  }
+  
+  return result;
+}
+```
+
+---
+
+## Step 5 — Implement `saveThread`
+
+**File:** `packages/fs/src/saveThread.ts`
+
+Persist all documents in a thread.
+
+```typescript
+import { Thread } from '../../core/src/types';
+import { saveDoc } from './save';
+import { resolveThreadPath } from './utils';
+import * as path from 'path';
+
+export async function saveThread(thread: Thread): Promise<void> {
+  for (const doc of thread.allDocs) {
+    const filePath = (doc as any)._path;
+    if (!filePath) {
+      // New document — determine correct path
+      const newPath = determinePathForDoc(doc, thread.id);
+      await saveDoc(doc, newPath);
+    } else {
+      await saveDoc(doc, filePath);
+    }
+  }
+}
+
+function determinePathForDoc(doc: any, threadId: string): string {
+  const threadPath = resolveThreadPath(threadId);
+  
+  switch (doc.type) {
+    case 'idea':
+      return path.join(threadPath, `${threadId}-idea.md`);
+    case 'design':
+      return path.join(threadPath, `${threadId}-design.md`);
+    case 'plan':
+      return path.join(threadPath, 'plans', `${doc.id}.md`);
+    case 'ctx':
+      return path.join(threadPath, `${threadId}-ctx.md`);
+    default:
+      throw new Error(`Unknown document type: ${doc.type}`);
+  }
+}
+```
+
+---
+
+## Step 6 — Integrate with Core Engine
+
+**File:** `packages/fs/src/runEvent.ts`
+
+Create a high‑level function that loads a thread, applies an event, and saves it back to disk.
+
+```typescript
+import { WorkflowEvent, applyEvent } from '../../core/src/applyEvent';
+import { loadThread } from './loadThread';
+import { saveThread } from './saveThread';
+
+export async function runEvent(threadId: string, event: WorkflowEvent): Promise<void> {
+  const thread = await loadThread(threadId);
+  const updatedThread = applyEvent(thread, event);
+  await saveThread(updatedThread);
+}
+```
+
+---
+
+## Step 7 — Test with Real Thread Folder
+
+Create a sample thread in the test loom:
+
+```bash
+mkdir -p ~/looms/test/threads/example/plans
+cp .loom/templates/design-template.md ~/looms/test/threads/example/example-design.md
+# Manually edit frontmatter to set proper id, status, etc.
+```
+
+Write a test script that:
+- Loads the example thread
+- Applies an event (e.g., `ACTIVATE_DESIGN`)
+- Verifies the file was updated correctly
+
+---
+
+## Legend
+
+| Symbol | Meaning |
+|--------|---------|
+| ✅ | Done |
+| 🔄 | In Progress |
+| 🔳 | Pending |
+| ❌ | Cancelled |

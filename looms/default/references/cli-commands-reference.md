@@ -3,9 +3,9 @@ type: reference
 id: cli-commands-reference
 title: "REslava Loom CLI Commands Reference"
 status: active
-created: 2026-04-13
+created: 2026-04-14
 version: 1
-tags: [cli, commands, reference]
+tags: [cli, commands, reference, loom]
 requires_load: []
 ---
 
@@ -17,7 +17,7 @@ This document catalogs every command available in the `loom` command-line interf
 
 ### `loom init`
 
-Initialize a new REslava Loom workspace.
+Initialize a new REslava Loom workspace in `~/looms/default/` and register it in the global registry.
 
 **Syntax:**
 ```bash
@@ -32,7 +32,77 @@ loom init [--force]
 loom init
 ```
 
-Creates `.wf/` directory with default templates and `default-wf.yml`.
+Creates `~/looms/default/` with `.loom/` directory and registers it in `~/.loom/config.yaml`.
+
+---
+
+### `loom setup`
+
+Create a new named loom workspace.
+
+**Syntax:**
+```bash
+loom setup <name> [--path <path>] [--no-switch]
+```
+
+**Options:**
+- `--path <path>`: Custom path for the loom (default: `~/looms/<name>/`).
+- `--no-switch`: Do not set as active loom after creation.
+
+**Example:**
+```bash
+loom setup test
+```
+
+Creates `~/looms/test/`, registers it, and switches to it.
+
+---
+
+### `loom switch`
+
+Switch the active loom context.
+
+**Syntax:**
+```bash
+loom switch <name>
+```
+
+**Example:**
+```bash
+loom switch test
+```
+
+---
+
+### `loom list`
+
+List all registered looms.
+
+**Syntax:**
+```bash
+loom list [--json]
+```
+
+**Options:**
+- `--json`: Output in JSON format.
+
+**Example Output:**
+```
+LOOMS
+  default      ~/looms/default
+* test         ~/looms/test
+```
+
+---
+
+### `loom current`
+
+Show the currently active loom.
+
+**Syntax:**
+```bash
+loom current
+```
 
 ---
 
@@ -45,41 +115,38 @@ Creates `.wf/` directory with default templates and `default-wf.yml`.
 loom doctor [--fix]
 ```
 
-**Options:**
-- `--fix`: Automatically repair detected issues where possible.
-
 ---
 
-## Feature & Document Management
+## Thread & Document Management
 
-### `loom new idea`
+### `loom weave idea`
 
 Create a new idea document.
 
 **Syntax:**
 ```bash
-loom new idea "<Title>" [--feature <name>]
+loom weave idea "<Title>" [--thread <name>]
 ```
 
 **Options:**
-- `--feature <name>`: Place the idea inside an existing feature folder. If omitted, creates a new folder based on the title.
+- `--thread <name>`: Place the idea inside an existing thread folder. If omitted, creates a new thread folder based on the title.
 
 **Example:**
 ```bash
-loom new idea "Add Dark Mode" --feature user-preferences
+loom weave idea "Add Dark Mode" --thread user-preferences
 ```
 
-Creates `features/user-preferences/user-preferences-idea.md`.
+Creates `threads/user-preferences/user-preferences-idea.md`.
 
 ---
 
-### `loom new design`
+### `loom weave design`
 
 Create a new design document from an idea or from scratch.
 
 **Syntax:**
 ```bash
-loom new design <feature-id> [--from-idea]
+loom weave design <thread-id> [--from-idea]
 ```
 
 **Options:**
@@ -87,46 +154,47 @@ loom new design <feature-id> [--from-idea]
 
 **Example:**
 ```bash
-loom new design user-preferences --from-idea
+loom weave design user-preferences --from-idea
 ```
 
-Creates `features/user-preferences/user-preferences-design.md`.
+Creates `threads/user-preferences/user-preferences-design.md`.
 
 ---
 
-### `loom new plan`
+### `loom weave plan`
 
 Create a new implementation plan from a finalized design.
 
 **Syntax:**
 ```bash
-loom new plan <feature-id> [--template <path>]
+loom weave plan <thread-id> [--template <path>]
 ```
 
 **Options:**
-- `--template <path>`: Use a custom plan template instead of the default.
+- `--template <path>`: Use a custom plan template.
 
 **Example:**
 ```bash
-loom new plan payment-system
+loom weave plan payment-system
 ```
 
-Creates `features/payment-system/plans/payment-system-plan-001.md`.
+Creates `threads/payment-system/plans/payment-system-plan-001.md`.
 
 ---
 
 ### `loom status`
 
-Display derived state of all features or a specific feature.
+Display derived state of all threads or a specific thread.
 
 **Syntax:**
 ```bash
-loom status [feature-id] [--verbose] [--json]
+loom status [thread-id] [--verbose] [--json] [--tokens]
 ```
 
 **Options:**
 - `--verbose`: Show detailed document status and relationships.
 - `--json`: Output in JSON format for scripting.
+- `--tokens`: Show token usage statistics.
 
 **Example:**
 ```bash
@@ -135,23 +203,17 @@ loom status payment-system --verbose
 
 ---
 
-### `loom list`
+### `loom list threads`
 
-List all features with their current status and phase.
+List all threads with their current status and phase.
 
 **Syntax:**
 ```bash
-loom list [--filter <status>] [--json]
+loom list threads [--filter <status>] [--json]
 ```
 
 **Options:**
-- `--filter <status>`: Show only features with a given status (`active`, `done`, `cancelled`).
-- `--json`: Output in JSON format.
-
-**Example:**
-```bash
-loom list --filter active
-```
+- `--filter <status>`: Show only threads with a given status (`active`, `done`, `cancelled`).
 
 ---
 
@@ -161,33 +223,20 @@ Check document relationships, frontmatter integrity, and staleness.
 
 **Syntax:**
 ```bash
-loom validate [feature-id] [--all] [--fix]
+loom validate [thread-id] [--all] [--fix]
 ```
 
 **Options:**
-- `--all`: Validate all features in the workspace.
+- `--all`: Validate all threads in the active loom.
 - `--fix`: Attempt to automatically correct fixable issues.
-
-**Example:**
-```bash
-loom validate payment-system
-```
 
 ---
 
 ### `loom validate-config`
 
-Validate the syntax and semantics of `workflow.yml`.
+Validate the syntax and semantics of `.loom/workflow.yml`.
 
 **Syntax:**
-```bash
-loom validate-config [--path <path>]
-```
-
-**Options:**
-- `--path <path>`: Path to a specific `workflow.yml` file.
-
-**Example:**
 ```bash
 loom validate-config
 ```
@@ -202,17 +251,14 @@ loom validate-config
 
 **Syntax:**
 ```bash
-loom ai respond [--document <path>] [--model <model>]
+loom ai respond [--document <path>] [--model <model>] [--minimal] [--full-context]
 ```
 
 **Options:**
-- `--document <path>`: Specify a document to use as context (default: current feature's design.md).
+- `--document <path>`: Specify a document to use as context (default: current thread's design.md).
 - `--model <model>`: Override the configured AI model.
-
-**Example:**
-```bash
-loom ai respond --document features/auth/auth-design.md
-```
+- `--minimal`: Skip `requires_load` and use summary if available.
+- `--full-context`: Force full context even if budget exceeded.
 
 ---
 
@@ -229,29 +275,19 @@ loom ai propose [--document <path>] [--auto-approve]
 - `--document <path>`: Target document for the proposal.
 - `--auto-approve`: Skip the approval prompt (use with caution).
 
-**Example:**
-```bash
-loom ai propose --document features/auth/auth-design.md
-```
-
 ---
 
 ### `loom summarise-context`
 
-Generate or regenerate the `-ctx.md` summary file for a feature.
+Generate or regenerate the `-ctx.md` summary file for a thread.
 
 **Syntax:**
 ```bash
-loom summarise-context <feature-id> [--force]
+loom summarise-context <thread-id> [--force]
 ```
 
 **Options:**
 - `--force`: Overwrite existing summary even if it appears fresh.
-
-**Example:**
-```bash
-loom summarise-context payment-system --force
-```
 
 ---
 
@@ -275,7 +311,7 @@ loom chat new [--title "<Topic>"] [--model <model>]
 loom chat new --title "JWT vs OAuth debate"
 ```
 
-Creates `chats/2026-04-13-jwt-vs-oauth-debate.md`.
+Creates `chats/2026-04-14-jwt-vs-oauth-debate.md`.
 
 ---
 
@@ -285,15 +321,13 @@ Promote a chat to an idea document.
 
 **Syntax:**
 ```bash
-loom promote <chat-file> --to idea [--feature <name>]
+loom promote <chat-file> --to idea [--thread <name>]
 ```
 
 **Example:**
 ```bash
-loom promote chats/2026-04-13-brainstorm.md --to idea --feature auth
+loom promote chats/brainstorm.md --to idea --thread auth
 ```
-
-Creates `features/auth/auth-idea.md` and archives the chat.
 
 ---
 
@@ -308,7 +342,7 @@ loom refine-with-chat <target-doc> <chat-file> [--auto-approve]
 
 **Example:**
 ```bash
-loom refine-with-chat features/auth/auth-design.md chats/security-chat.md
+loom refine-with-chat threads/auth/auth-design.md chats/security-chat.md
 ```
 
 ---
@@ -322,14 +356,6 @@ Append chat content (or a summary) to a target document's `# CHAT` section.
 loom append-chat <chat-file> --to <target-doc> [--summarize]
 ```
 
-**Options:**
-- `--summarize`: Append an AI-generated summary instead of the full conversation.
-
-**Example:**
-```bash
-loom append-chat chats/quick-question.md --to features/auth/auth-design.md --summarize
-```
-
 ---
 
 ### `loom chat archive`
@@ -339,11 +365,6 @@ Manually archive a chat without further action.
 **Syntax:**
 ```bash
 loom chat archive <chat-file>
-```
-
-**Example:**
-```bash
-loom chat archive chats/old-discussion.md
 ```
 
 ---
@@ -365,12 +386,8 @@ loom chat list [--json]
 
 **Syntax:**
 ```bash
-loom chat search "<query>" [--action <type>] [--feature <id>]
+loom chat search "<query>" [--action <type>] [--thread <id>]
 ```
-
-**Options:**
-- `--action <type>`: Filter by usage (`promote`, `refine`, `append`).
-- `--feature <id>`: Filter by associated feature.
 
 ---
 
@@ -382,7 +399,7 @@ Manually fire a workflow event.
 
 **Syntax:**
 ```bash
-loom run <feature-id> <event-name> [--payload <json>]
+loom run <thread-id> <event-name> [--payload <json>]
 ```
 
 **Example:**
@@ -394,11 +411,11 @@ loom run payment-system REFINE_DESIGN
 
 ### `loom refine-design`
 
-Shortcut for `loom run <feature-id> REFINE_DESIGN`.
+Shortcut for `loom run <thread-id> REFINE_DESIGN`.
 
 **Syntax:**
 ```bash
-loom refine-design <feature-id>
+loom refine-design <thread-id>
 ```
 
 ---
@@ -423,11 +440,6 @@ Mark a specific plan step as done.
 loom complete-step <plan-id> --step <n>
 ```
 
-**Example:**
-```bash
-loom complete-step payment-system-plan-001 --step 2
-```
-
 ---
 
 ## Maintenance & Repair
@@ -438,13 +450,8 @@ loom complete-step payment-system-plan-001 --step 2
 
 **Syntax:**
 ```bash
-loom repair [feature-id] [--fix-orphans] [--fix-stale] [--dry-run]
+loom repair [thread-id] [--fix-orphans] [--fix-stale] [--dry-run]
 ```
-
-**Options:**
-- `--fix-orphans`: Remove broken `parent_id` references.
-- `--fix-stale`: Recompute and correct `staled` flags.
-- `--dry-run`: Show what would be changed without applying.
 
 ---
 
@@ -461,14 +468,27 @@ loom migrate [--add-missing-fields] [--rename-field <old> <new>]
 
 ### `loom archive`
 
-Move a completed or cancelled feature to `_archive/`.
+Move a completed or cancelled thread to `_archive/threads/`.
 
 **Syntax:**
 ```bash
-loom archive <feature-id> [--reason <done|cancelled|postponed|superseded>]
+loom archive <thread-id> [--reason <done|cancelled|postponed|superseded>]
 ```
 
 **Example:**
 ```bash
 loom archive old-checkout --reason superseded
 ```
+
+---
+
+### `loom upgrade --to-multi`
+
+Migrate a mono-loom project to multi-loom mode.
+
+**Syntax:**
+```bash
+loom upgrade --to-multi
+```
+
+Moves Loom-specific directories to `~/looms/default/` and creates global registry.

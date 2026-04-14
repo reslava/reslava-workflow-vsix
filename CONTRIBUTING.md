@@ -1,6 +1,6 @@
-# Contributing to the AI-Native Workflow System
+# Contributing to REslava Loom
 
-Thank you for your interest in contributing! This document provides guidelines and workflows to help you get started.
+Thank you for your interest in contributing to REslava Loom! This document provides guidelines and workflows to help you get started.
 
 ## Table of Contents
 
@@ -19,30 +19,30 @@ Thank you for your interest in contributing! This document provides guidelines a
 
 ## Code of Conduct
 
-This project adheres to a [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to [project maintainers].
+This project adheres to a [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
 ---
 
 ## Getting Started
 
-1.  **Fork the repository** on GitHub.
-2.  **Clone your fork** locally:
-    ```bash
-    git clone https://github.com/your-username/workflow-system.git
-    cd workflow-system
-    ```
-3.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
-4.  **Build the project**:
-    ```bash
-    npm run build
-    ```
-5.  **Run tests** to verify everything works:
-    ```bash
-    npm test
-    ```
+1. **Fork the repository** on GitHub.
+2. **Clone your fork** locally:
+   ```bash
+   git clone https://github.com/your-username/reslava-loom.git
+   cd reslava-loom
+   ```
+3. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+4. **Build the project**:
+   ```bash
+   npm run build
+   ```
+5. **Run tests** to verify everything works:
+   ```bash
+   npm test
+   ```
 
 ---
 
@@ -50,31 +50,31 @@ This project adheres to a [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT
 
 ### VS Code Extension Development
 
-The VS Code extension lives in the `extension/` directory. To develop and debug:
+The VS Code extension lives in the `packages/vscode/` directory. To develop and debug:
 
-1.  Open the project in VS Code.
-2.  Press `F5` to launch a new Extension Development Host window.
-3.  In the new window, open a test workspace (e.g., `./demo-workspace/`).
-4.  Use the "Workflow Features" view in the Explorer sidebar.
+1. Open the project in VS Code.
+2. Press `F5` to launch a new Extension Development Host window.
+3. In the new window, open a test loom (e.g., `~/looms/test/`).
+4. Use the "Loom" view in the Explorer sidebar.
 
 **Recommended Extensions for Development:**
 - ESLint
 - Prettier
-- TypeScript + JavaScript
+- TypeScript
 
 ### CLI Development
 
-The CLI (`wf`) is built with TypeScript and `commander`. To test CLI changes locally:
+The CLI (`loom`) is built with TypeScript and `commander`. To test CLI changes locally:
 
 ```bash
 npm run build:cli
-npm link   # Makes `wf` available globally for testing
-wf status  # Test commands
+npm link   # Makes `loom` available globally for testing
+loom status
 ```
 
 To unlink:
 ```bash
-npm unlink -g wf-cli
+npm unlink -g @reslava-loom/cli
 ```
 
 ### Running in Watch Mode
@@ -91,47 +91,52 @@ npm run watch:cli    # Rebuilds CLI on file changes
 
 ```
 .
-├── .wf/                    # Default templates and config (used by `wf init`)
-├── docs/                   # User and contributor documentation
+├── .loom/                    # Default templates and config (used by `loom init`)
+├── docs/                     # User and contributor documentation
 │   ├── ARCHITECTURE.md
 │   ├── WORKFLOW_YML.md
 │   ├── EFFECTS.md
-│   └── templates/          # Document templates
-├── extension/              # VS Code extension source
-│   ├── src/
-│   │   ├── extension.ts    # Activation entry point
-│   │   ├── commands/       # Command implementations
-│   │   ├── tree/           # TreeDataProvider and ViewModel
-│   │   ├── view/           # ViewState management
-│   │   └── core/           # Core engine (reused from core package)
-│   └── package.json        # Extension manifest
+│   ├── AI_INTEGRATION.md
+│   ├── CONFIGURATION.md
+│   ├── COLLABORATION.md
+│   ├── TROUBLESHOOTING.md
+│   └── DOCUMENTATION_GUIDE.md
+├── references/               # Reference materials (CLI commands, directory structure)
 ├── packages/
-│   ├── core/               # Shared core engine (reducers, derived state)
+│   ├── core/                 # Shared core engine (reducers, derived state)
 │   │   ├── src/
 │   │   │   ├── types.ts
 │   │   │   ├── designReducer.ts
 │   │   │   ├── planReducer.ts
 │   │   │   ├── applyEvent.ts
-│   │   │   └── derived.ts
+│   │   │   ├── derived.ts
+│   │   │   └── registry.ts
 │   │   └── test/
-│   ├── cli/                # CLI application
+│   ├── fs/                   # Filesystem utilities (Markdown load/save)
 │   │   ├── src/
-│   │   │   ├── cli.ts
+│   │   └── test/
+│   ├── cli/                  # CLI application
+│   │   ├── src/
+│   │   │   ├── index.ts
 │   │   │   └── commands/
 │   │   └── test/
-│   └── fs/                 # Filesystem utilities (Markdown load/save)
+│   └── vscode/               # VS Code extension
 │       ├── src/
-│       └── test/
-├── features/               # Example features for testing (ignored by Git)
-├── demo-workspace/         # Empty workspace for extension debugging
-└── package.json            # Monorepo root (uses npm workspaces)
+│       │   ├── extension.ts
+│       │   ├── commands/
+│       │   ├── tree/
+│       │   └── views/
+│       └── package.json
+├── threads/                  # Example threads for testing (ignored by Git)
+├── looms/                    # Test looms for manual verification
+└── package.json              # Monorepo root (uses npm workspaces)
 ```
 
 ---
 
 ## Architecture Principles
 
-When contributing code, please adhere to the core architectural principles outlined in [ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+When contributing code, please adhere to the core architectural principles outlined in [`ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
 
 ### 1. Pure Reducers for State Changes
 All logic that modifies document state **must** be a pure function located in `packages/core/src/*Reducer.ts`. These functions take a `BaseDoc` and an `Event` and return a new `BaseDoc`. They **must not** perform I/O.
@@ -140,10 +145,13 @@ All logic that modifies document state **must** be a pure function located in `p
 File writes, command execution, and notifications belong in the **Effects Layer** (`packages/core/src/effects/`). Effects are executed after the reducer updates state.
 
 ### 3. Derived State is Computed, Not Stored
-Never add a field like `feature.status` to a file on disk. Status is always derived by `packages/core/src/derived.ts`.
+Never add a field like `thread.status` to a file on disk. Status is always derived by `packages/core/src/derived.ts`.
 
 ### 4. No Global State
 The system does not use a central state object or database. State is read from the filesystem on demand (with caching for performance).
+
+### 5. Multi‑Loom Resolution
+The active loom is resolved by `packages/fs/src/utils.ts` → `getActiveLoomRoot()`. This function checks the global registry (`~/.loom/config.yaml`) and falls back to local `.loom/` discovery.
 
 ---
 
@@ -153,10 +161,10 @@ The system does not use a central state object or database. State is read from t
 - **Formatting:** Prettier (run `npm run format` before committing).
 - **Linting:** ESLint (run `npm run lint`).
 - **Commit Messages:** Follow [Conventional Commits](https://www.conventionalcommits.org/) format:
-  - `feat: add support for custom templates`
-  - `fix: resolve stale detection when design version missing`
-  - `docs: update EFFECTS.md with run_command examples`
-  - `refactor: extract feature resolution to separate module`
+  - `feat(core): add REFINE_DESIGN reducer`
+  - `fix(fs): resolve thread root from active loom`
+  - `docs(readme): update CLI examples`
+  - `refactor(cli): extract status command`
 
 ### Naming Conventions
 - Files: `kebab-case.ts`
@@ -172,7 +180,7 @@ The system does not use a central state object or database. State is read from t
 All pure functions in `packages/core` must have unit tests.
 
 ```bash
-npm test -- --filter=@wf/core
+npm test -- --filter=@reslava-loom/core
 ```
 
 Write tests in `packages/core/test/` using a structure that mirrors `src/`.
@@ -181,7 +189,7 @@ Write tests in `packages/core/test/` using a structure that mirrors `src/`.
 Tests that touch the filesystem should create temporary directories.
 
 ```bash
-npm test -- --filter=@wf/fs
+npm test -- --filter=@reslava-loom/fs
 ```
 
 ### Extension Tests
@@ -200,31 +208,31 @@ npm run test:extension
 
 ## Submitting Changes
 
-1.  **Create a feature branch** from `main`:
-    ```bash
-    git checkout -b feat/my-new-feature
-    ```
-2.  **Make your changes**, adhering to coding standards and architecture principles.
-3.  **Write or update tests** to cover your changes.
-4.  **Update documentation** if you've added a new effect, CLI command, or workflow feature.
-5.  **Run the full test suite**:
-    ```bash
-    npm run lint
-    npm run format
-    npm test
-    ```
-6.  **Commit with a descriptive message**:
-    ```bash
-    git commit -m "feat(core): add 'duplicate_design' event"
-    ```
-7.  **Push to your fork** and open a Pull Request on GitHub.
+1. **Create a feature branch** from `main`:
+   ```bash
+   git checkout -b feat/my-new-feature
+   ```
+2. **Make your changes**, adhering to coding standards and architecture principles.
+3. **Write or update tests** to cover your changes.
+4. **Update documentation** if you've added a new effect, CLI command, or workflow feature.
+5. **Run the full test suite**:
+   ```bash
+   npm run lint
+   npm run format
+   npm test
+   ```
+6. **Commit with a descriptive message**:
+   ```bash
+   git commit -m "feat(core): add 'duplicate_design' event"
+   ```
+7. **Push to your fork** and open a Pull Request on GitHub.
 
 ### Pull Request Checklist
 
 - [ ] Code compiles without errors (`npm run build`).
 - [ ] Linting passes (`npm run lint`).
 - [ ] Tests pass (`npm test`).
-- [ ] New features are documented in `docs/` if user-facing.
+- [ ] New features are documented in `docs/` if user‑facing.
 - [ ] Architecture decisions are explained in PR description.
 - [ ] PR title follows Conventional Commits.
 
@@ -232,16 +240,14 @@ npm run test:extension
 
 ## Documentation Contributions
 
-Documentation is a critical part of this project. Improvements to clarity, examples, and structure are highly valued.
+Documentation is a critical part of REslava Loom. Improvements to clarity, examples, and structure are highly valued.
 
-- **User Docs:** `README.md`, `ARCHITECTURE.md`, `WORKFLOW_YML.md`, `EFFECTS.md`
-- **Templates:** `docs/templates/`
+- **User Docs:** `README.md`, `docs/ARCHITECTURE.md`, `docs/WORKFLOW_YML.md`, `docs/EFFECTS.md`, `docs/AI_INTEGRATION.md`, `docs/CONFIGURATION.md`, `docs/COLLABORATION.md`, `docs/TROUBLESHOOTING.md`
+- **Reference Docs:** `references/cli-commands-reference.md`, `references/vscode-commands-reference.md`, `references/workspace-directory-structure-reference.md`
+- **Templates:** `.loom/templates/`
 - **Code Comments:** Use JSDoc for public APIs.
 
-When updating docs, run a local markdown linter:
-```bash
-npx markdownlint-cli2 "docs/**/*.md" "*.md"
-```
+When updating docs, follow the conventions in [`DOCUMENTATION_GUIDE.md`](./docs/DOCUMENTATION_GUIDE.md).
 
 ---
 
@@ -252,19 +258,19 @@ Please include:
 - OS and VS Code version.
 - Steps to reproduce.
 - Expected vs. actual behavior.
-- Relevant `wf` CLI output or extension logs (found in Output panel → "Workflow Effects").
+- Relevant `loom` CLI output or extension logs (found in Output panel → "Loom: Core").
 
 ### Feature Requests
-Check the [Project Roadmap](ROADMAP.md) first. If your idea isn't listed, open a discussion with:
+Check existing issues and discussions first. If your idea isn't listed, open a discussion with:
 - The problem it solves.
-- Why it fits the project's philosophy.
+- Why it fits REslava Loom's philosophy.
 - A rough idea of the implementation (optional).
 
 ---
 
 ## Getting Help
 
-- **Questions?** Open a [GitHub Discussion](https://github.com/your-repo/discussions).
+- **Questions?** Open a [GitHub Discussion](https://github.com/reslava/reslava-loom/discussions).
 - **Development Chat:** Join our Discord server (link in README).
 
-Thank you for contributing to a more structured, reliable AI development experience!
+Thank you for contributing to REslava Loom! 🧵✨

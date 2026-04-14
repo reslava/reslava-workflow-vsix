@@ -1,6 +1,6 @@
 ---
 type: design
-id: loom-multi-workspace-design
+id: multi-workspace-design
 title: "Multi-Loom Workspaces & Thematic Vocabulary"
 status: active
 created: 2026-04-14

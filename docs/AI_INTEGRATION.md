@@ -1,6 +1,6 @@
-# AI Integration & Handshake Protocol
+# AI Integration & Handshake Protocol — REslava Loom
 
-This document defines how the workflow system interacts with Large Language Models (LLMs). It specifies the **native AI client**, **context injection strategy**, **dual interaction modes** (Chat vs. Action), and the **human approval flow** that ensures safe, predictable AI collaboration.
+This document defines how REslava Loom interacts with Large Language Models (LLMs). It specifies the **native AI client**, **context injection strategy**, **dual interaction modes** (Chat vs. Action), and the **human approval flow** that ensures safe, predictable AI collaboration.
 
 ---
 
@@ -24,9 +24,9 @@ This approach ensures:
 
 ## 2. Document Writing Convention
 
-All workflow documents follow a consistent voice:
+All Loom documents follow a consistent voice:
 
-- **First person** in conversation blocks (`## User:` and `## AI:`). These are direct dialogue between the human and the AI.
+- **First person** in conversation blocks (`## {{user.name}}:` and `## AI:`). These are direct dialogue between the human and the AI.
 - **Third person** in all other sections (Goal, Context, Architecture, etc.). This maintains objectivity and readability.
 
 ---
@@ -40,9 +40,9 @@ The VS Code extension includes a **native AI client** that directly calls LLM pr
 │                      VS Code Extension                       │
 │  ┌─────────────────┐  ┌──────────────────────────────────┐  │
 │  │   UI Commands   │  │         Native AI Client         │  │
-│  │ wf ai respond   │─▶│  - Prompt assembly               │  │
-│  │ wf ai propose   │  │  - API call (DeepSeek/OpenAI)    │  │
-│  │ wf summarise    │  │  - Response parsing              │  │
+│  │ loom ai respond │─▶│  - Prompt assembly               │  │
+│  │ loom ai propose │  │  - API call (DeepSeek/OpenAI)    │  │
+│  │ loom summarise  │  │  - Response parsing              │  │
 │  └─────────────────┘  │  - Token accumulation            │  │
 │                       └──────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
@@ -67,18 +67,18 @@ The system supports two distinct modes of AI interaction.
 
 **Purpose:** Brainstorming, clarifying requirements, exploring options.
 
-**Invocation:** `wf ai respond` command (or toolbar button).
+**Invocation:** `loom ai respond` command (or toolbar button).
 
 **Behavior:**
 - The extension reads the current document (usually `design.md`).
-- It assembles context: feature state, full conversation log, and any documents listed in `requires_load`.
+- It assembles context: thread state, full conversation log, and any documents listed in `requires_load`.
 - The prompt is sent to the configured LLM.
 - The AI's plain text response is appended to the document as a new `## AI:` block.
 - No workflow state changes occur.
 
 **Example:**
 ```markdown
-## User:
+## Rafa:
 I think we should consider using a message queue for async processing. Thoughts?
 
 ## AI:
@@ -90,10 +90,10 @@ Do you have a preference between RabbitMQ, SQS, or Kafka?
 
 **Purpose:** Committing a decision to the workflow state (e.g., refining a design, starting a plan).
 
-**Invocation:** `wf ai propose` command.
+**Invocation:** `loom ai propose` command.
 
 **Behavior:**
-- The extension assembles context **plus** the list of allowed events (from `workflow.yml`) for the current document type and status.
+- The extension assembles context **plus** the list of allowed events (from `.loom/workflow.yml`) for the current document type and status.
 - The LLM responds with a **structured JSON block** containing a proposed workflow event.
 - The extension displays a diff preview of the proposed frontmatter changes.
 - Upon user approval, the event is fired, updating the document and triggering any side effects.
@@ -103,7 +103,7 @@ Do you have a preference between RabbitMQ, SQS, or Kafka?
 {
   "proposed_action": "REFINE_DESIGN",
   "reasoning": "The user confirmed PostgreSQL as the database choice. The design version should be incremented to reflect this change and mark dependent plans as stale.",
-  "target_document_id": "design-payment",
+  "target_document_id": "payment-system-design",
   "requires_approval": true,
   "next_step_description": "Review the updated design and regenerate any stale plans."
 }
@@ -163,21 +163,21 @@ The native AI client builds a system prompt containing:
 
 | Priority | Source |
 |----------|--------|
-| 1 | Feature derived state (status, phase) |
-| 2 | Full `design.md` (or `design-ctx.md` if size exceeds threshold) |
+| 1 | Thread derived state (status, phase) |
+| 2 | Full `design.md` (or `-ctx.md` if size exceeds threshold) |
 | 3 | Active plan steps (if any) |
 | 4 | Documents listed in `requires_load` |
 | 5 | Allowed events list (Action Mode only) |
 
 ### Token Budget Management
 
-The extension respects the following VS Code settings:
+The extension respects the following VS Code settings (prefix `reslava-loom.`):
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `workflow.ai.maxContextTokens` | `8000` | Maximum tokens for the entire prompt. |
-| `workflow.ai.designSummaryThreshold` | `20000` | Characters in `design.md` before auto-summary. |
-| `workflow.ai.reservedResponseTokens` | `1000` | Tokens reserved for the AI's response. |
+| `ai.maxContextTokens` | `8000` | Maximum tokens for the entire prompt. |
+| `ai.designSummaryThreshold` | `20000` | Characters in `design.md` before auto‑summary. |
+| `ai.reservedResponseTokens` | `1000` | Tokens reserved for the AI's response. |
 
 If the context exceeds `maxContextTokens`, the system truncates the conversation log to the most recent blocks and logs a warning.
 
@@ -209,11 +209,11 @@ This ensures a complete, searchable conversation history.
 
 ---
 
-## 9. Context Summarization (`design-ctx.md`)
+## 9. Context Summarization (`-ctx.md`)
 
-To prevent context overflow, the system can auto-generate a summary of `design.md`:
+To prevent context overflow, the system can auto‑generate a summary of `design.md`:
 
-- **Trigger:** Manual (`wf summarise-context`) or when `design.md` exceeds the configured character threshold.
+- **Trigger:** Manual (`loom summarise-context <thread-id>`) or when `design.md` exceeds the configured character threshold.
 - **Content:** Problem statement, key decisions with timestamps, open questions, and plan references.
 - **AI Usage:** When fresh, the AI is instructed to read the summary first.
 
@@ -224,7 +224,7 @@ To prevent context overflow, the system can auto-generate a summary of `design.m
 Users may still use external chat tools (Continue, Cursor, web ChatGPT). The system:
 
 - **Does not block or discourage this.**
-- Provides `wf import-chat` to paste external responses into `design.md` with proper formatting.
+- Provides `loom import-chat` to paste external responses into `design.md` with proper formatting.
 - Clearly communicates that token tracking and context features **only apply to native AI usage**.
 
 This respects user freedom while offering a superior integrated experience.
@@ -237,14 +237,14 @@ Users configure their AI provider in VS Code settings:
 
 ```json
 {
-  "workflow.ai.provider": "deepseek",
-  "workflow.ai.apiKey": "sk-...",
-  "workflow.ai.model": "deepseek-chat",
-  "workflow.ai.baseUrl": "https://api.deepseek.com/v1"
+  "reslava-loom.ai.provider": "deepseek",
+  "reslava-loom.ai.apiKey": "sk-...",
+  "reslava-loom.ai.model": "deepseek-chat",
+  "reslava-loom.ai.baseUrl": "https://api.deepseek.com/v1"
 }
 ```
 
-Supported providers: DeepSeek, OpenAI, Anthropic (via OpenAI-compatible proxy), Ollama (local).
+Supported providers: DeepSeek, OpenAI, Anthropic (via OpenAI‑compatible proxy), Ollama (local).
 
 ---
 
@@ -252,10 +252,10 @@ Supported providers: DeepSeek, OpenAI, Anthropic (via OpenAI-compatible proxy), 
 
 | Command | Mode | Description |
 |---------|------|-------------|
-| `wf ai respond` | Chat | Get AI response and append to document. |
-| `wf ai propose` | Action | Request JSON event proposal; show diff approval. |
-| `wf summarise-context` | Utility | Force generation of `design-ctx.md`. |
-| `wf import-chat` | Utility | Import external chat content into document. |
+| `loom ai respond` | Chat | Get AI response and append to document. |
+| `loom ai propose` | Action | Request JSON event proposal; show diff approval. |
+| `loom summarise-context <thread-id>` | Utility | Force generation of `-ctx.md`. |
+| `loom import-chat` | Utility | Import external chat content into document. |
 
 ---
 
@@ -263,7 +263,7 @@ Supported providers: DeepSeek, OpenAI, Anthropic (via OpenAI-compatible proxy), 
 
 | Symptom | Possible Cause | Solution |
 |---------|---------------|----------|
-| AI proposes invalid events | Allowed events list missing or `workflow.yml` invalid | Run `wf validate-config`. |
+| AI proposes invalid events | Allowed events list missing or `workflow.yml` invalid | Run `loom validate-config`. |
 | AI response truncated | Context exceeds token limit | Reduce `maxContextTokens` or summarize manually. |
 | Approval dialog shows no diff | Event does not change frontmatter | Expected for events like `CREATE_PLAN` (child creation). |
 | AI outputs JSON in Chat Mode | Mode detection failed | Ensure correct command was used. |
@@ -272,7 +272,7 @@ Supported providers: DeepSeek, OpenAI, Anthropic (via OpenAI-compatible proxy), 
 
 ## 14. Future Enhancements
 
-- Streaming responses for real-time feedback.
+- Streaming responses for real‑time feedback.
 - Hybrid mode: conversational text with embedded JSON proposals.
 - Custom prompt templates.
-- Per-feature cost tracking.
+- Per‑thread cost tracking.

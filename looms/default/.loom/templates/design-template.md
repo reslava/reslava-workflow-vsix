@@ -2,15 +2,15 @@
 type: design
 id: {type-id}
 title: "{Title}"
-status: draft | active | done | cancelled | implementing | implemented
+status: draft | active | closed | done | cancelled
 created: {YYYY-MM-DD}
-version: 1.0.0
+version: 1
 tags: []
 parent_id: {parent_id} 
 child_ids: []          
 requires_load: []
 target_release: "1.0.0"
-actual_release: null   # or omitted until shipped
+actual_release: null
 ---
 
 # {Title}

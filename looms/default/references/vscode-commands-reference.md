@@ -5,7 +5,7 @@ title: "REslava Loom VS Code Commands Reference"
 status: active
 created: 2026-04-14
 version: 1
-tags: [vscode, commands, reference, ui]
+tags: [vscode, commands, reference, ui, loom]
 requires_load: []
 ---
 
@@ -24,18 +24,21 @@ All commands are accessible via `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` 
 | Command | Description | Default Keybinding | Command ID |
 |---------|-------------|-------------------|------------|
 | `Loom: Initialize Workspace` | Run `loom init` in the current workspace. | — | `loom.init` |
+| `Loom: Setup New Loom` | Create a new named loom workspace. | — | `loom.setup` |
+| `Loom: Switch Loom` | Switch active loom context. | — | `loom.switch` |
+| `Loom: List Looms` | Show all registered looms. | — | `loom.listLooms` |
 | `Loom: Doctor` | Run system health check and repair. | — | `loom.doctor` |
 
-### Feature & Document Management
+### Thread & Document Management
 
 | Command | Description | Default Keybinding | Command ID |
 |---------|-------------|-------------------|------------|
-| `Loom: New Idea` | Create a new idea document. | `Ctrl+Shift+L I` | `loom.newIdea` |
-| `Loom: New Design` | Create a new design document from an idea. | `Ctrl+Shift+L D` | `loom.newDesign` |
-| `Loom: New Plan` | Create a new implementation plan. | `Ctrl+Shift+L P` | `loom.newPlan` |
-| `Loom: Show Status` | Display derived state of the current feature. | `Ctrl+Shift+L S` | `loom.showStatus` |
-| `Loom: List Features` | List all features with status and phase. | — | `loom.listFeatures` |
-| `Loom: Validate Feature` | Run validation on the current feature. | — | `loom.validateFeature` |
+| `Loom: Weave Idea` | Create a new idea document. | `Ctrl+Shift+L I` | `loom.weaveIdea` |
+| `Loom: Weave Design` | Create a new design document. | `Ctrl+Shift+L D` | `loom.weaveDesign` |
+| `Loom: Weave Plan` | Create a new implementation plan. | `Ctrl+Shift+L P` | `loom.weavePlan` |
+| `Loom: Show Status` | Display derived state of current thread. | `Ctrl+Shift+L S` | `loom.showStatus` |
+| `Loom: List Threads` | List all threads with status and phase. | — | `loom.listThreads` |
+| `Loom: Validate Thread` | Run validation on current thread. | — | `loom.validateThread` |
 | `Loom: Validate Configuration` | Validate `workflow.yml` syntax. | — | `loom.validateConfig` |
 
 ### AI Collaboration
@@ -50,9 +53,9 @@ All commands are accessible via `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` 
 
 | Command | Description | Default Keybinding | Command ID |
 |---------|-------------|-------------------|------------|
-| `Loom: New Chat` | Create a new chat file in `chats/`. | `Ctrl+Shift+L C` | `loom.chatNew` |
-| `Loom: Promote Chat to Idea` | Convert selected chat to an idea document. | — | `loom.chatPromote` |
-| `Loom: Refine with Chat` | Use selected chat to refine a design or plan. | — | `loom.chatRefine` |
+| `Loom: New Chat` | Create a new chat file. | `Ctrl+Shift+L C` | `loom.chatNew` |
+| `Loom: Promote Chat to Idea` | Convert chat to an idea document. | — | `loom.chatPromote` |
+| `Loom: Refine with Chat` | Use chat to refine a design or plan. | — | `loom.chatRefine` |
 | `Loom: Append Chat` | Append chat content to target document. | — | `loom.chatAppend` |
 | `Loom: Archive Chat` | Manually archive selected chat. | — | `loom.chatArchive` |
 
@@ -60,35 +63,34 @@ All commands are accessible via `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` 
 
 | Command | Description | Default Keybinding | Command ID |
 |---------|-------------|-------------------|------------|
-| `Loom: Refine Design` | Fire `REFINE_DESIGN` event for current feature. | — | `loom.refineDesign` |
-| `Loom: Start Plan` | Fire `START_PLAN` event for selected plan. | — | `loom.startPlan` |
+| `Loom: Refine Design` | Fire `REFINE_DESIGN` event. | — | `loom.refineDesign` |
+| `Loom: Start Plan` | Fire `START_PLAN` event. | — | `loom.startPlan` |
 | `Loom: Complete Step` | Mark selected step as done. | — | `loom.completeStep` |
 
 ### Maintenance
 
 | Command | Description | Default Keybinding | Command ID |
 |---------|-------------|-------------------|------------|
-| `Loom: Archive Feature` | Move feature to `_archive/`. | — | `loom.archiveFeature` |
-| `Loom: Repair Feature` | Fix common issues in current feature. | — | `loom.repairFeature` |
+| `Loom: Archive Thread` | Move thread to `_archive/`. | — | `loom.archiveThread` |
+| `Loom: Repair Thread` | Fix common issues in current thread. | — | `loom.repairThread` |
+| `Loom: Upgrade to Multi-Loom` | Migrate mono-loom to multi-loom. | — | `loom.upgradeToMulti` |
 
 ---
 
 ## Tree View Context Menus
 
-Commands available when right-clicking nodes in the "REslava Loom" tree view.
-
-### Feature Node
+### Thread Node
 
 | Command | Description |
 |---------|-------------|
-| `New Idea` | Create a new idea in this feature. |
-| `New Design` | Create a new design (if not exists). |
-| `New Plan` | Create a new plan from the design. |
-| `AI Respond` | Open Chat Mode with this feature's design. |
-| `AI Propose` | Request event proposal for this feature. |
-| `Validate Feature` | Run validation. |
+| `Weave Idea` | Create a new idea in this thread. |
+| `Weave Design` | Create a new design (if not exists). |
+| `Weave Plan` | Create a new plan from the design. |
+| `AI Respond` | Open Chat Mode with this thread's design. |
+| `AI Propose` | Request event proposal for this thread. |
+| `Validate Thread` | Run validation. |
 | `Show Status` | Display detailed status. |
-| `Archive Feature` | Move to `_archive/`. |
+| `Archive Thread` | Move to `_archive/`. |
 
 ### Design Node
 
@@ -96,10 +98,9 @@ Commands available when right-clicking nodes in the "REslava Loom" tree view.
 |---------|-------------|
 | `Open Document` | Open the design file. |
 | `AI Respond` | Continue conversation in Chat Mode. |
-| `AI Propose` | Request event proposal for this design. |
+| `AI Propose` | Request event proposal. |
 | `Refine Design` | Fire `REFINE_DESIGN` event. |
 | `Summarise Context` | Generate context summary. |
-| `Reveal in File Explorer` | Show file in system explorer. |
 
 ### Plan Node
 
@@ -110,7 +111,6 @@ Commands available when right-clicking nodes in the "REslava Loom" tree view.
 | `Complete Step` → (submenu) | Select step to mark done. |
 | `Block Plan` | Mark plan as blocked. |
 | `Finish Plan` | Mark plan as done. |
-| `Reveal in File Explorer` | Show file in system explorer. |
 
 ### Chat Node (in `chats/`)
 
@@ -121,41 +121,18 @@ Commands available when right-clicking nodes in the "REslava Loom" tree view.
 | `Refine Design with Chat...` | Select target design to refine. |
 | `Append to Design...` | Select target design to append. |
 | `Archive Chat` | Move to `_archive/chats/`. |
-| `Reveal in File Explorer` | Show file in system explorer. |
-
-### Archive Node
-
-| Command | Description |
-|---------|-------------|
-| `Restore Feature` | Move archived feature back to `features/`. |
-| `Delete Permanently` | Remove archived feature (with confirmation). |
-
----
-
-## Editor Context Menus
-
-Commands available when right-clicking inside a `.md` document.
-
-| Command | Description | Applies To |
-|---------|-------------|------------|
-| `REslava Loom: AI Respond` | Send document (or selection) to AI. | `.md` files |
-| `REslava Loom: AI Propose` | Request event proposal. | `.md` files |
-| `REslava Loom: Insert AI Response` | Paste last AI response at cursor. | `.md` files |
-| `REslava Loom: Format Conversation` | Normalize `## User:` / `## AI:` headers. | `.md` files |
 
 ---
 
 ## Toolbar Actions
 
-Buttons available in the "REslava Loom" view title bar.
-
 | Icon | Action | Description |
 |------|--------|-------------|
 | 🔄 | Refresh | Refresh the tree view. |
-| ➕ | New... | Dropdown: New Idea, New Design, New Plan, New Chat. |
+| ➕ | Weave... | Dropdown: Weave Idea, Weave Design, Weave Plan, New Chat. |
 | 🔍 | Filter | Text filter for tree items. |
-| 📁 | Group By | Dropdown: Type, Feature, Status, Release. |
-| ⚙️ | Settings | Open extension settings. |
+| 📁 | Group By | Dropdown: Type, Thread, Status, Release. |
+| 🧵 | Switch Loom | Quick pick from registered looms. |
 
 ---
 
@@ -163,9 +140,9 @@ Buttons available in the "REslava Loom" view title bar.
 
 | Item | Description |
 |------|-------------|
-| `Loom: <feature-id>` | Current active feature. Click to switch. |
+| `🧵 Loom: <name>` | Current active loom. Click to switch. |
 | `📊 <tokens>` | Session token usage. Click to view details. |
-| `🎯 <target_release>` | Target release for current feature (if set). |
+| `🎯 <target_release>` | Target release for current thread (if set). |
 
 ---
 
@@ -173,16 +150,13 @@ Buttons available in the "REslava Loom" view title bar.
 
 | Keybinding | Command |
 |------------|---------|
-| `Ctrl+Shift+L I` | New Idea |
-| `Ctrl+Shift+L D` | New Design |
-| `Ctrl+Shift+L P` | New Plan |
+| `Ctrl+Shift+L I` | Weave Idea |
+| `Ctrl+Shift+L D` | Weave Design |
+| `Ctrl+Shift+L P` | Weave Plan |
 | `Ctrl+Shift+L C` | New Chat |
 | `Ctrl+Shift+L R` | AI Respond |
 | `Ctrl+Shift+L A` | AI Propose |
 | `Ctrl+Shift+L S` | Show Status |
-| `Ctrl+Shift+L F` | Focus Feature (filter tree) |
-
-*Note: On macOS, `Ctrl` is replaced with `Cmd`.*
 
 ---
 
@@ -197,10 +171,8 @@ All settings are prefixed with `reslava-loom.`.
 | `ai.provider` | `string` | `"deepseek"` | AI provider (`deepseek`, `openai`, `anthropic`, `ollama`). |
 | `ai.apiKey` | `string` | `""` | API key for the selected provider. |
 | `ai.model` | `string` | `"deepseek-chat"` | Model name. |
-| `ai.baseUrl` | `string` | `""` | Override API endpoint. |
 | `ai.maxContextTokens` | `number` | `8000` | Maximum tokens for AI prompt. |
 | `ai.designSummaryThreshold` | `number` | `20000` | Characters before auto-summary. |
 | `allowShellCommands` | `boolean` | `false` | Enable `run_command` effect. |
-| `fileWatcherDebounceMs` | `number` | `300` | Debounce delay for file watcher. |
-| `tree.showArchived` | `boolean` | `false` | Show archived features in tree view. |
-| `tree.defaultGrouping` | `string` | `"feature"` | Default grouping mode. |
+| `tree.defaultGrouping` | `string` | `"thread"` | Default grouping mode. |
+| `tree.showArchived` | `boolean` | `false` | Show archived threads in tree view. |

@@ -1,119 +1,102 @@
 ---
 type: plan
-id: workflow-plan-006-toolbar
+id: vscode-extension-plan-006
 title: "Implement VSCode Toolbar (View Controls & Actions)"
-status: active
+status: draft
 created: 2026-04-11
-version: 1
-tags: [toolbar, vscode, commands, ui, viewstate]
-design_id: workflow-toolbar-viewstate
-target_version: 0.6.0
-requires_load: [workflow-toolbar-viewstate, workflow-feature-model]
+updated: 2026-04-14
+version: 2
+design_version: 1
+tags: [vscode, toolbar, ui, viewstate, loom]
+parent_id: vscode-extension-design
+target_version: "0.6.0"
+requires_load: [vscode-extension-toolbar-design, vscode-extension-plan-004, vscode-extension-plan-005]
 ---
 
-# Feature — Implement VSCode Toolbar
+# Plan — Implement VSCode Toolbar (View Controls & Actions)
 
 | | |
 |---|---|
 | **Created** | 2026-04-11 |
+| **Updated** | 2026-04-14 |
 | **Status** | DRAFT |
-| **Design** | `wf/plans/design/workflow-toolbar-viewstate-design.md` |
+| **Design** | `vscode-extension-toolbar-design.md` |
 | **Target version** | 0.6.0 |
 
 ---
 
 # Goal
 
-Implement a fully functional VSCode toolbar system for the workflow view, including:
+Implement a fully functional VSCode toolbar system for the Loom view, including:
 
 - View controls (grouping, filters)
-- Context-aware action buttons
+- Context‑aware action buttons
 - Command registration
 - Binding toolbar actions to ViewState
-- Triggering Tree refresh
+- Triggering tree refresh
 
 ---
 
 # Steps
 
-| # | Done | Step | Files touched |
-|---|---|---|---|
-| 1 | — | Define commands in package.json | `package.json` |
-| 2 | — | Contribute view toolbar UI | `package.json` |
-| 3 | — | Implement ViewState manager | `src/view/viewStateManager.ts` |
-| 4 | — | Register commands in extension.ts | `src/extension.ts` |
-| 5 | — | Bind commands to ViewState updates | `src/extension.ts` |
-| 6 | — | Implement grouping selector | `src/commands/grouping.ts` |
-| 7 | — | Implement filter controls | `src/commands/filter.ts` |
-| 8 | — | Implement action commands | `src/commands/actions.ts` |
-| 9 | — | Add context-based enable/disable | `package.json` |
-| 10 | — | Connect refresh cycle | `src/extension.ts` |
+| Done | # | Step | Files touched | Blocked by |
+|---|---|---|---|---|
+| 🔳 | 1 | Define commands in package.json | `packages/vscode/package.json` | — |
+| 🔳 | 2 | Contribute view toolbar UI | `packages/vscode/package.json` | Step 1 |
+| 🔳 | 3 | Implement ViewState manager | `packages/vscode/src/view/viewStateManager.ts` | — |
+| 🔳 | 4 | Register commands in extension.ts | `packages/vscode/src/extension.ts` | Steps 1, 3 |
+| 🔳 | 5 | Bind commands to ViewState updates | `packages/vscode/src/commands/view.ts` | Step 4 |
+| 🔳 | 6 | Implement grouping selector (QuickPick) | `packages/vscode/src/commands/grouping.ts` | Step 5 |
+| 🔳 | 7 | Implement filter controls (text, status) | `packages/vscode/src/commands/filter.ts` | Step 5 |
+| 🔳 | 8 | Implement action commands (weave, refine) | `packages/vscode/src/commands/actions.ts` | Step 5 |
+| 🔳 | 9 | Add context‑based enable/disable | `packages/vscode/package.json` | Step 2 |
+| 🔳 | 10 | Connect refresh cycle | `packages/vscode/src/extension.ts` | All |
 
 ---
 
-## Step 1 — Define Commands
+## Step 1 — Define Commands in package.json
 
-Add commands to `package.json`.
+Add all toolbar‑related commands to the `contributes.commands` section.
 
 ```json
 {
   "contributes": {
     "commands": [
-      { "command": "workflow.setGroupingType", "title": "Group by Type" },
-      { "command": "workflow.setGroupingFeature", "title": "Group by Feature" },
-      { "command": "workflow.setGroupingTag", "title": "Group by Tag" },
-      { "command": "workflow.setGroupingStatus", "title": "Group by Status" },
-
-      { "command": "workflow.setTextFilter", "title": "Filter by Text" },
-      { "command": "workflow.toggleShowDone", "title": "Toggle Done" },
-      { "command": "workflow.toggleShowCancelled", "title": "Toggle Cancelled" },
-
-      { "command": "workflow.createIdea", "title": "Create Idea" },
-      { "command": "workflow.createDesign", "title": "Create Design" },
-      { "command": "workflow.createPlan", "title": "Create Plan" },
-      { "command": "workflow.createContext", "title": "Create Context" }
+      { "command": "loom.setGroupingType", "title": "Group by Type" },
+      { "command": "loom.setGroupingThread", "title": "Group by Thread" },
+      { "command": "loom.setGroupingStatus", "title": "Group by Status" },
+      { "command": "loom.setGroupingRelease", "title": "Group by Release" },
+      { "command": "loom.setTextFilter", "title": "Filter by Text" },
+      { "command": "loom.toggleArchived", "title": "Toggle Archived" },
+      { "command": "loom.focusThread", "title": "Focus Thread" },
+      { "command": "loom.weaveIdea", "title": "Weave Idea" },
+      { "command": "loom.weaveDesign", "title": "Weave Design" },
+      { "command": "loom.weavePlan", "title": "Weave Plan" },
+      { "command": "loom.newChat", "title": "New Chat" }
     ]
   }
 }
-````
+```
 
 ---
 
-## Step 2 — Contribute Toolbar UI
+## Step 2 — Contribute View Toolbar UI
 
-Attach commands to the view toolbar.
+Attach commands to the view toolbar using `menus.view/title`.
 
 ```json
 {
   "contributes": {
     "menus": {
       "view/title": [
-        {
-          "command": "workflow.setGroupingType",
-          "when": "view == workflowView",
-          "group": "navigation@1"
-        },
-        {
-          "command": "workflow.setGroupingFeature",
-          "when": "view == workflowView",
-          "group": "navigation@2"
-        },
-        {
-          "command": "workflow.setTextFilter",
-          "when": "view == workflowView",
-          "group": "navigation@3"
-        },
-
-        {
-          "command": "workflow.createIdea",
-          "when": "view == workflowView",
-          "group": "actions@1"
-        },
-        {
-          "command": "workflow.createPlan",
-          "when": "view == workflowView && viewItem == design",
-          "group": "actions@2"
-        }
+        { "command": "loom.setGroupingThread", "when": "view == loom.threads", "group": "navigation@1" },
+        { "command": "loom.setTextFilter", "when": "view == loom.threads", "group": "navigation@2" },
+        { "command": "loom.toggleArchived", "when": "view == loom.threads", "group": "navigation@3" },
+        { "command": "loom.focusThread", "when": "view == loom.threads", "group": "navigation@4" },
+        { "command": "loom.weaveIdea", "when": "view == loom.threads", "group": "actions@1" },
+        { "command": "loom.weaveDesign", "when": "view == loom.threads && viewItem == thread", "group": "actions@2" },
+        { "command": "loom.weavePlan", "when": "view == loom.threads && viewItem == design", "group": "actions@3" },
+        { "command": "loom.newChat", "when": "view == loom.threads", "group": "actions@4" }
       ]
     }
   }
@@ -122,18 +105,21 @@ Attach commands to the view toolbar.
 
 ---
 
-## Step 3 — ViewState Manager
+## Step 3 — Implement ViewState Manager
 
-Centralize state mutation.
+**File:** `packages/vscode/src/view/viewStateManager.ts`
 
-```ts
-// src/view/viewStateManager.ts
+Centralized state mutation with persistence in `workspaceState`.
+
+```typescript
+import * as vscode from 'vscode';
+import { ViewState, defaultViewState } from './viewState';
 
 export class ViewStateManager {
   private state: ViewState;
 
-  constructor(initial: ViewState) {
-    this.state = initial;
+  constructor(private workspaceState: vscode.Memento) {
+    this.state = { ...defaultViewState, ...workspaceState.get<ViewState>('loom.viewState') };
   }
 
   getState(): ViewState {
@@ -142,6 +128,13 @@ export class ViewStateManager {
 
   update(partial: Partial<ViewState>): ViewState {
     this.state = { ...this.state, ...partial };
+    this.workspaceState.update('loom.viewState', this.state);
+    return this.state;
+  }
+
+  reset(): ViewState {
+    this.state = { ...defaultViewState };
+    this.workspaceState.update('loom.viewState', this.state);
     return this.state;
   }
 }
@@ -149,165 +142,198 @@ export class ViewStateManager {
 
 ---
 
-## Step 4 — Register Commands
+## Step 4 — Register Commands in extension.ts
 
-```ts
-// extension.ts
+**File:** `packages/vscode/src/extension.ts`
 
-const viewStateManager = new ViewStateManager(defaultViewState);
+```typescript
+import { ViewStateManager } from './view/viewStateManager';
+import { LoomTreeProvider } from './tree/treeProvider';
 
-context.subscriptions.push(
-  vscode.commands.registerCommand('workflow.setGroupingType', () => {
-    viewStateManager.update({ grouping: 'type' });
-    treeProvider.refresh();
-  })
-);
+export function activate(context: vscode.ExtensionContext) {
+  const viewStateManager = new ViewStateManager(context.workspaceState);
+  const treeProvider = new LoomTreeProvider(/* ... */);
 
-context.subscriptions.push(
-  vscode.commands.registerCommand('workflow.setGroupingFeature', () => {
-    viewStateManager.update({ grouping: 'feature' });
-    treeProvider.refresh();
-  })
-);
+  const refresh = () => treeProvider.refresh();
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('loom.setGroupingType', () => {
+      viewStateManager.update({ grouping: 'type' });
+      refresh();
+    }),
+    vscode.commands.registerCommand('loom.setGroupingThread', () => {
+      viewStateManager.update({ grouping: 'thread' });
+      refresh();
+    }),
+    // ... register all other commands
+  );
+}
 ```
 
 ---
 
-## Step 5 — Bind Commands to ViewState
+## Step 5 — Bind Commands to ViewState Updates
 
-Pattern:
+**File:** `packages/vscode/src/commands/view.ts`
 
-```ts
-function updateViewStateAndRefresh(update: Partial<ViewState>) {
-  viewStateManager.update(update);
+Create helper functions for common ViewState mutations.
+
+```typescript
+import { ViewStateManager } from '../view/viewStateManager';
+import { LoomTreeProvider } from '../tree/treeProvider';
+
+export function updateViewStateAndRefresh(
+  manager: ViewStateManager,
+  treeProvider: LoomTreeProvider,
+  update: Partial<ViewState>
+): void {
+  manager.update(update);
   treeProvider.refresh();
 }
 ```
 
 ---
 
-## Step 6 — Grouping Selector
+## Step 6 — Implement Grouping Selector (QuickPick)
 
-Option A (simple):
+**File:** `packages/vscode/src/commands/grouping.ts`
 
-* separate buttons (Type / Feature / Tag / Status)
+```typescript
+import * as vscode from 'vscode';
+import { ViewStateManager } from '../view/viewStateManager';
+import { LoomTreeProvider } from '../tree/treeProvider';
+import { updateViewStateAndRefresh } from './view';
 
-Option B (better UX, later):
+export async function showGroupingSelector(
+  manager: ViewStateManager,
+  treeProvider: LoomTreeProvider
+): Promise<void> {
+  const options: vscode.QuickPickItem[] = [
+    { label: '$(symbol-class) Type', description: 'Group by document type' },
+    { label: '$(project) Thread', description: 'Group by feature thread' },
+    { label: '$(git-commit) Status', description: 'Group by workflow status' },
+    { label: '$(tag) Release', description: 'Group by target release' },
+  ];
 
-* QuickPick menu
+  const selected = await vscode.window.showQuickPick(options, {
+    placeHolder: 'Select grouping mode',
+  });
 
-```ts
-await vscode.window.showQuickPick([
-  'type',
-  'feature',
-  'tag',
-  'status'
-]);
-```
-
----
-
-## Step 7 — Filter Controls
-
-### Text Filter
-
-```ts
-const input = await vscode.window.showInputBox({
-  placeHolder: 'Filter documents...'
-});
-
-updateViewStateAndRefresh({ textFilter: input });
-```
-
----
-
-### Toggle Done
-
-```ts
-const current = viewStateManager.getState().showDone;
-
-updateViewStateAndRefresh({
-  showDone: !current
-});
-```
-
----
-
-## Step 8 — Action Commands
-
-Example:
-
-```ts
-vscode.commands.registerCommand('workflow.createPlan', (node: TreeNode) => {
-  if (!node.doc || node.doc.type !== 'design') return;
-
-  // create plan linked to design.id
-});
-```
-
----
-
-## Step 9 — Context-Based Enable/Disable
-
-Use `contextValue` from TreeItem.
-
-```ts
-item.contextValue = 'design';
-```
-
-In `package.json`:
-
-```json
-{
-  "when": "viewItem == design"
+  if (selected) {
+    const mode = selected.label.includes('Type') ? 'type' :
+                 selected.label.includes('Thread') ? 'thread' :
+                 selected.label.includes('Status') ? 'status' : 'release';
+    updateViewStateAndRefresh(manager, treeProvider, { grouping: mode as any });
+  }
 }
 ```
 
 ---
 
-## Step 10 — Refresh Cycle
+## Step 7 — Implement Filter Controls
 
-All commands MUST end with:
+**File:** `packages/vscode/src/commands/filter.ts`
 
-```ts
-treeProvider.refresh();
+```typescript
+import * as vscode from 'vscode';
+import { ViewStateManager } from '../view/viewStateManager';
+import { LoomTreeProvider } from '../tree/treeProvider';
+import { updateViewStateAndRefresh } from './view';
+
+export async function setTextFilter(
+  manager: ViewStateManager,
+  treeProvider: LoomTreeProvider
+): Promise<void> {
+  const current = manager.getState().textFilter;
+  const input = await vscode.window.showInputBox({
+    prompt: 'Filter documents by text',
+    value: current,
+    placeHolder: 'Enter search term...',
+  });
+
+  if (input !== undefined) {
+    updateViewStateAndRefresh(manager, treeProvider, { textFilter: input || undefined });
+  }
+}
+
+export function toggleArchived(
+  manager: ViewStateManager,
+  treeProvider: LoomTreeProvider
+): void {
+  const current = manager.getState().showArchived;
+  updateViewStateAndRefresh(manager, treeProvider, { showArchived: !current });
+}
 ```
 
 ---
 
-# Notes
+## Step 8 — Implement Action Commands
 
-* Toolbar commands must NOT:
+**File:** `packages/vscode/src/commands/actions.ts`
 
-  * manipulate tree directly
-  * bypass ViewState
+```typescript
+import * as vscode from 'vscode';
+import { TreeNode } from '../view/viewModel';
 
-* Always:
+export async function weaveIdea(node?: TreeNode): Promise<void> {
+  const threadId = node?.threadId || '';
+  const title = await vscode.window.showInputBox({ prompt: 'Idea title' });
+  if (title) {
+    // Call CLI or core engine to create idea
+    vscode.window.showInformationMessage(`Idea "${title}" created in ${threadId || 'new thread'}`);
+  }
+}
 
-  ```text
-  Command → ViewState → ViewModel → Tree
-  ```
+export async function weaveDesign(node?: TreeNode): Promise<void> {
+  if (!node?.threadId) {
+    vscode.window.showWarningMessage('Select a thread to weave a design');
+    return;
+  }
+  // Call CLI or core engine
+}
 
----
-
-# Expected Result
-
-Toolbar:
-
-```text
-[ Type ] [ Feature ] [ Filter 🔍 ] | [ +Idea ] [ +Plan ]
+export async function weavePlan(node?: TreeNode): Promise<void> {
+  if (!node?.doc || node.doc.type !== 'design') {
+    vscode.window.showWarningMessage('Select a design to weave a plan');
+    return;
+  }
+  // Call CLI or core engine
+}
 ```
 
-Behavior:
+---
 
-* switching grouping updates tree
-* filters apply instantly
-* actions enabled depending on selection
+## Step 9 — Add Context‑Based Enable/Disable
+
+In `treeProvider.ts`, set `contextValue` on each `TreeItem`:
+
+```typescript
+getTreeItem(node: TreeNode): vscode.TreeItem {
+  const item = new vscode.TreeItem(node.label, node.collapsibleState);
+  if (node.type === 'group' && node.threadId) {
+    item.contextValue = 'thread';
+  } else if (node.doc) {
+    item.contextValue = node.doc.type;
+  }
+  return item;
+}
+```
+
+The `when` clauses in `package.json` (Step 2) will use these values to show/hide commands.
 
 ---
 
-# Next Step
+## Step 10 — Connect Refresh Cycle
 
-* Implement QuickPick-based grouping selector (better UX)
-* Add Focus Feature command
-* Persist ViewState (workspace storage)
+Ensure all commands that modify state end with `treeProvider.refresh()`. This is already handled by `updateViewStateAndRefresh`.
+
+---
+
+## Legend
+
+| Symbol | Meaning |
+|--------|---------|
+| ✅ | Done |
+| 🔄 | In Progress |
+| 🔳 | Pending |
+| ❌ | Cancelled |

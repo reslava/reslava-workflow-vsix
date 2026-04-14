@@ -1,402 +1,164 @@
 ---
 type: design
-id: workflow-toolbar-viewstate-design
+id: vscode-extension-toolbar-design
 title: "Toolbar & ViewState Interaction Model"
-status: draft
+status: active
 created: 2026-04-11
-version: 1.0.0
-tags: [ui, toolbar, viewstate, feature, interaction]
-parent_id: workflow-vscode-extension
+updated: 2026-04-14
+version: 2
+tags: [ui, toolbar, viewstate, vscode, loom]
+parent_id: vscode-extension-design
 child_ids: []
-requires_load: [workflow-feature-model]
+requires_load: [vscode-extension-design]
+target_release: "0.4.0"
+actual_release: null
 ---
 
-# Toolbar & ViewState Interaction Model
+# Toolbar & ViewState Interaction Model — REslava Loom
 
 ## Goal
 
-Define how the toolbar controls (grouping, filtering, actions) interact with the ViewState and how those changes affect the Feature-based tree rendering. This ensures a consistent, predictable, and extensible UI behavior.
-
----
+Define how the toolbar controls (grouping, filtering, actions) interact with the ViewState and how those changes affect the thread‑based tree rendering. This ensures a consistent, predictable, and extensible UI behavior within the REslava Loom VS Code extension.
 
 ## Context
 
 With the introduction of:
-
 - ViewModel (projection layer)
-- Feature model (hierarchical grouping)
+- Thread model (hierarchical grouping)
 - Filtering (status, text)
 
-the UI must provide a way for users to control how data is visualized.
-
-The toolbar becomes the **control surface** for ViewState.
-
----
+the UI must provide a way for users to control how data is visualized. The toolbar becomes the **control surface** for ViewState.
 
 # CHAT
 
-## User:
-Define how toolbar interacts with ViewState and Feature grouping.
+## Rafa:
+Define how toolbar interacts with ViewState and thread grouping.
 
 ## AI:
+Toolbar → ViewState → ViewModel → TreeProvider → UI. Toolbar modifies ViewState; ViewState drives projection; ViewModel builds tree; TreeProvider renders.
 
-## Core Concept
-
-```text
-Toolbar → ViewState → ViewModel → TreeProvider → UI
-````
-
-* Toolbar modifies ViewState
-* ViewState drives projection
-* ViewModel builds tree
-* TreeProvider renders
-
----
-
-## ViewState as Single Source of Truth
+### 1. ViewState as Single Source of Truth
 
 ```ts
 interface ViewState {
-  grouping: 'type' | 'feature' | 'tag' | 'status';
-
+  grouping: 'type' | 'thread' | 'status' | 'release';
   textFilter?: string;
-
   statusFilter: string[];
-
-  showDone: boolean;
-  showCancelled: boolean;
-
-  focusedFeatureId?: string;
+  showArchived: boolean;
+  focusedThreadId?: string;
+  activeLoom?: string;  // For multi‑loom display
 }
 ```
 
-### Key Rule
+**Key Rule:** UI never manipulates tree directly — only updates ViewState.
 
-> UI never manipulates tree directly — only updates ViewState.
+### 2. Toolbar Structure
 
----
-
-## Toolbar Structure
-
-### Toolbar 1 — View Controls
-
-Controls visualization.
+#### Toolbar 1 — View Controls
 
 ```text
-[ Group By ▼ ]  [ Search 🔍 ]  [ Active ✓ ] [ Done ] [ Cancelled ]
+[ Group By ▼ ]  [ Search 🔍 ]  [ Active ✓ ] [ Archived ]
 ```
 
-#### Controls
+| Control | Options | Effect |
+|---------|---------|--------|
+| Grouping Selector | Type, Thread, Status, Release | `viewState.grouping = 'thread'` → refresh |
+| Text Filter | Input field | `viewState.textFilter = input` (debounced) |
+| Status Toggles | Active, Done, Cancelled | Updates `statusFilter` |
+| Archived Toggle | Show/Hide | `viewState.showArchived = !current` |
 
-##### 1. Grouping Selector
-
-Options:
+#### Toolbar 2 — Actions (Context‑aware)
 
 ```text
-Type | Feature | Tag | Status
+[ Weave Idea ] [ Weave Design ] [ Weave Plan ] [ New Chat ]
 ```
 
-Effect:
+Action visibility depends on selected node:
 
-```ts
-viewState.grouping = 'feature';
-```
+| Action | Visible when | Behavior |
+|--------|--------------|----------|
+| Weave Idea | Always | Standalone or linked to thread |
+| Weave Design | Idea or thread selected | Attach to thread |
+| Weave Plan | Design selected | Attach to design |
+| New Chat | Any node | Create chat in `chats/` |
 
-Triggers:
+**Design Decision:** Prefer **disable with tooltip**, not hide.
 
-```ts
-treeProvider.refresh();
-```
+### 3. Thread Grouping Interaction
 
----
-
-##### 2. Text Filter
-
-Input field.
-
-Effect:
-
-```ts
-viewState.textFilter = input;
-```
-
-Behavior:
-
-* applied live (debounced recommended)
-* filters across all groupings
-
----
-
-##### 3. Status Filter Toggles
-
-Controls visibility:
-
-```ts
-viewState.statusFilter = ['active', 'implementing', 'draft'];
-viewState.showDone = false;
-viewState.showCancelled = false;
-```
-
----
-
-### Toolbar 2 — Actions
-
-Context-aware commands.
+When `grouping = 'thread'`, tree becomes:
 
 ```text
-[ +Idea ] [ +Design ] [ +Plan ] [ +Ctx ]
+🧵 Thread: Payment System
+ ├── 📄 Design
+ ├── 📋 Plans
+ ├── 💡 Ideas
+ └── 📚 Contexts
 ```
 
----
+**Filtering Behavior:** Filters apply **before grouping** — `docs → filter → groupByThread`. Empty sections are hidden; entire thread hidden if no docs pass filter.
 
-## Action Visibility Rules
+### 4. Focus Thread Mode
 
-Actions depend on selected node.
+New control: `[ Focus Mode ]` — sets `viewState.focusedThreadId`. Only one thread rendered. Clear by clicking again.
 
-| Action         | Visible when          | Behavior             |
-| -------------- | --------------------- | -------------------- |
-| Create Idea    | always                | standalone or linked |
-| Create Design  | idea or root selected | attach to idea       |
-| Create Plan    | design selected       | attach to design     |
-| Create Context | any node              | attach to selected   |
+### 5. Multi‑Loom Awareness
 
----
-
-### Design Decision: Hide vs Disable
-
-Decision:
-
-> Prefer **disable with tooltip**, not hide
-
-Reason:
-
-* avoids UI shifting
-* improves discoverability
-
----
-
-## Feature Grouping Interaction
-
-### When grouping = 'feature'
-
-Tree becomes:
+When multiple looms are registered, toolbar includes a loom selector:
 
 ```text
-Feature (Design)
- ├── Design
- ├── Plans
- ├── Ideas
- └── Contexts
+[ 🧵 default ▼ ]  [ Group By ▼ ]  ...
 ```
 
----
+Switching looms updates the active loom via `loom switch` and refreshes the tree.
 
-### Filtering Behavior
-
-Filters apply **before grouping**:
-
-```ts
-docs → filter → groupByFeature
-```
-
-Effect:
-
-* Feature may appear partially filled
-* Empty sections are hidden
-* Entire feature hidden if no docs pass filter
-
----
-
-### Focus Feature Mode
-
-New control:
-
-```text
-[ Focus Mode ]
-```
-
-Behavior:
-
-```ts
-viewState.focusedFeatureId = feature.id;
-```
-
-Effect:
-
-```text
-Only one feature is rendered
-```
-
----
-
-### Clearing Focus
-
-```ts
-viewState.focusedFeatureId = undefined;
-```
-
----
-
-## ViewModel Integration
+### 6. ViewModel Integration
 
 ```ts
 buildTree(state: ViewState): TreeNode[] {
-  let docs = this.store.getAllDocs();
-
+  let docs = this.store.getAllDocs(state.activeLoom);
   docs = this.applyFilters(docs, state);
-
-  let nodes = [];
-
-  switch (state.grouping) {
-    case 'feature':
-      nodes = this.groupByFeature(docs);
-      break;
-    default:
-      nodes = this.groupByType(docs);
+  let nodes = state.grouping === 'thread' 
+    ? this.groupByThread(docs) 
+    : this.groupByType(docs);
+  if (state.focusedThreadId) {
+    nodes = nodes.filter(n => n.threadId === state.focusedThreadId);
   }
-
-  if (state.focusedFeatureId) {
-    nodes = nodes.filter(n => this.isFeatureNode(n, state.focusedFeatureId));
-  }
-
   return nodes;
 }
 ```
 
----
+### 7. Archive Sections
 
-## Archive Sections (Done / Cancelled)
+Archived threads are shown in a separate collapsible section when `showArchived: true`. They are **not** grouped by thread — simple flat list.
 
-Separate UI sections:
+### 8. UX Principles
 
-```text
-Active Work (Tree)
+- **Predictability:** Same filters apply across all groupings.
+- **Stability:** Toolbar actions do not shift layout.
+- **Progressive Disclosure:** Advanced modes (thread, focus) are optional.
+- **Performance:** Filtering happens once; grouping uses filtered dataset.
 
-Archive
- ├── Done (list)
- └── Cancelled (list)
-```
+### 9. Edge Cases
 
----
+| Scenario | Behavior |
+|----------|----------|
+| Empty tree | Show "No results found" |
+| Partial thread | Allowed (e.g., only plans visible) |
+| Orphan docs | Shown in "Unassigned" group |
 
-### Behavior
+### 10. Future Extensions
 
-* NOT grouped by feature
-* simple flat lists
-* respect `showDone` / `showCancelled`
-
----
-
-## UX Principles
-
-### 1. Predictability
-
-* same filters apply across all groupings
-
----
-
-### 2. Stability
-
-* toolbar actions do not shift layout
-
----
-
-### 3. Progressive Disclosure
-
-* advanced modes (feature, focus) are optional
-
----
-
-### 4. Performance
-
-* filtering happens once
-* grouping uses filtered dataset
-
----
-
-## Edge Cases
-
-### Empty Tree
-
-If no results:
-
-```text
-No results found
-```
-
----
-
-### Partial Feature
-
-Allowed:
-
-```text
-Feature A
- ├── Plans (1)
-```
-
----
-
-### Orphan Docs
-
-Shown in:
-
-```text
-Unassigned
-```
-
----
-
-## Future Extensions
-
-### Saved Views
-
-```ts
-ViewPreset {
-  name: string;
-  state: ViewState;
-}
-```
-
----
-
-### Quick Filters
-
-```text
-My Work | Recent | Active Only
-```
-
----
-
-### Inline Editing
-
-* change status directly from tree
-* update ViewState automatically
-
----
+- **Saved Views:** Named presets of ViewState.
+- **Quick Filters:** My Work, Recent, Active Only.
+- **Inline Editing:** Change status directly from tree.
 
 ## Decision
 
-* ViewState is the **only mutable UI state**
-* Toolbar is a **pure controller of ViewState**
-* Feature grouping is a **projection**, not a structure
-* Filtering always happens **before grouping**
+ViewState is the **only mutable UI state**. Toolbar is a **pure controller of ViewState**. Thread grouping is a **projection**, not a structure. Filtering always happens **before grouping**.
 
----
+## Next Steps
 
-## Open Questions
-
-* Should focus mode persist across sessions?
-* Should grouping preference be workspace-specific?
-* Should archive sections be collapsible or separate views?
-
----
-
-## Next Step
-
-Implement:
-
-* Toolbar commands
-* ViewState mutation handlers
-* Bind UI controls to ViewState updates
-* Connect refresh cycle
+- Implement toolbar commands.
+- Wire ViewState mutation handlers.
+- Connect refresh cycle.

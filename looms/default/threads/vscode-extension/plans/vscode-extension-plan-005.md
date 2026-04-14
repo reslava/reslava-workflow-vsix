@@ -1,81 +1,89 @@
 ---
 type: plan
-id: workflow-plan-005-group-by-feature
-title: "Implement groupByFeature (Feature-Based Tree View)"
-status: active
+id: vscode-extension-plan-005
+title: "Implement groupByThread — Thread‑Based Tree View"
+status: draft
 created: 2026-04-11
-version: 1
-tags: [feature, tree, viewmodel, grouping]
-design_id: workflow-feature-model
-target_version: 0.5.0
-requires_load: [workflow-feature-model]
+updated: 2026-04-14
+version: 2
+design_version: 1
+tags: [vscode, tree, viewmodel, grouping, thread]
+parent_id: vscode-extension-design
+target_version: "0.5.0"
+requires_load: [vscode-extension-design]
 ---
 
-# Feature — Implement groupByFeature
+# Plan — Implement groupByThread (Thread‑Based Tree View)
 
 | | |
 |---|---|
 | **Created** | 2026-04-11 |
+| **Updated** | 2026-04-14 |
 | **Status** | DRAFT |
-| **Design** | `wf/plans/design/workflow-feature-model-design.md` |
+| **Design** | `vscode-extension-design.md` |
 | **Target version** | 0.5.0 |
 
 ---
 
 # Goal
 
-Implement `groupByFeature` in the ViewModel to enable grouping documents by Feature. This will transform the tree from a flat/type-based structure into a hierarchical, work-centric view organized around Designs and their related documents.
+Implement `groupByThread` in the ViewModel to enable grouping documents by Thread. This transforms the tree from a flat/type‑based structure into a hierarchical, work‑centric view organized around primary designs and their related documents.
 
 ---
 
 # Steps
 
-| # | Done | Step | Files touched |
-|---|---|---|---|
-| 1 | — | Create Feature builder utility | `src/domain/featureBuilder.ts` |
-| 2 | — | Implement relationship resolution | `src/domain/featureBuilder.ts` |
-| 3 | — | Build Feature collection from docs | `src/domain/featureBuilder.ts` |
-| 4 | — | Integrate Feature builder into ViewModel | `src/view/viewModel.ts` |
-| 5 | — | Implement groupByFeature tree projection | `src/view/viewModel.ts` |
-| 6 | — | Handle orphan documents | `src/view/viewModel.ts` |
-| 7 | — | Add basic sorting (optional) | `src/view/viewModel.ts` |
+| Done | # | Step | Files touched | Blocked by |
+|---|---|---|---|---|
+| 🔳 | 1 | Create Thread builder utility | `packages/vscode/src/domain/threadBuilder.ts` | — |
+| 🔳 | 2 | Implement relationship resolution | `packages/vscode/src/domain/threadBuilder.ts` | Step 1 |
+| 🔳 | 3 | Build Thread collection from docs | `packages/vscode/src/domain/threadBuilder.ts` | Step 2 |
+| 🔳 | 4 | Integrate Thread builder into ViewModel | `packages/vscode/src/view/viewModel.ts` | Step 3 |
+| 🔳 | 5 | Implement groupByThread tree projection | `packages/vscode/src/view/viewModel.ts` | Step 4 |
+| 🔳 | 6 | Handle orphan documents | `packages/vscode/src/view/viewModel.ts` | Step 5 |
+| 🔳 | 7 | Add basic sorting | `packages/vscode/src/view/viewModel.ts` | Step 5 |
 
 ---
 
-## Step 1 — Create Feature Builder Utility
+## Step 1 — Create Thread Builder Utility
 
-Create a domain module responsible for constructing Features from documents.
+**File:** `packages/vscode/src/domain/threadBuilder.ts`
 
-```ts
-// src/domain/featureBuilder.ts
+Define the `Thread` interface and builder function.
 
-export interface Feature {
+```typescript
+import { Document, DesignDoc } from '../../../core/src/types';
+
+export interface Thread {
   id: string;
-
-  design: BaseDoc;
-
-  plans: BaseDoc[];
-  ideas: BaseDoc[];
-  contexts: BaseDoc[];
-
-  allDocs: BaseDoc[];
+  design: DesignDoc;
+  plans: Document[];
+  ideas: Document[];
+  contexts: Document[];
+  supportingDesigns: Document[];
+  allDocs: Document[];
 }
-````
+
+export function buildThreads(docs: Document[]): Thread[] {
+  // Implementation in Step 3
+}
+```
 
 ---
 
 ## Step 2 — Implement Relationship Resolution
 
-Implement ancestry resolution to find the Design root.
+**File:** `packages/vscode/src/domain/threadBuilder.ts`
 
-```ts
-function resolveDesign(
-  doc: BaseDoc,
-  docsById: Map<string, BaseDoc>
-): BaseDoc | undefined {
+Implement ancestry resolution to find the primary design root.
 
+```typescript
+function resolvePrimaryDesign(
+  doc: Document,
+  docsById: Map<string, Document>
+): DesignDoc | undefined {
   const visited = new Set<string>();
-  let current: BaseDoc | undefined = doc;
+  let current: Document | undefined = doc;
 
   while (current?.parent_id) {
     if (visited.has(current.id)) return undefined; // cycle guard
@@ -84,7 +92,9 @@ function resolveDesign(
     const parent = docsById.get(current.parent_id);
     if (!parent) return undefined;
 
-    if (parent.type === 'design') return parent;
+    if (parent.type === 'design' && (parent as DesignDoc).role === 'primary') {
+      return parent as DesignDoc;
+    }
 
     current = parent;
   }
@@ -95,107 +105,118 @@ function resolveDesign(
 
 ---
 
-## Step 3 — Build Feature Collection
+## Step 3 — Build Thread Collection from Docs
 
-```ts
-export function buildFeatures(docs: BaseDoc[]): Feature[] {
+**File:** `packages/vscode/src/domain/threadBuilder.ts`
+
+```typescript
+export function buildThreads(docs: Document[]): Thread[] {
   const docsById = new Map(docs.map(d => [d.id, d]));
+  const threads: Record<string, Thread> = {};
 
-  const features: Record<string, Feature> = {};
-
-  // Initialize from designs
+  // Initialize from primary designs
   docs.forEach(doc => {
-    if (doc.type === 'design') {
-      features[doc.id] = {
+    if (doc.type === 'design' && (doc as DesignDoc).role === 'primary') {
+      threads[doc.id] = {
         id: doc.id,
-        design: doc,
+        design: doc as DesignDoc,
         plans: [],
         ideas: [],
         contexts: [],
-        allDocs: [doc]
+        supportingDesigns: [],
+        allDocs: [doc],
       };
     }
   });
 
   // Assign other docs
   docs.forEach(doc => {
-    if (doc.type === 'design') return;
+    if (doc.type === 'design' && (doc as DesignDoc).role === 'primary') return;
 
-    const design = resolveDesign(doc, docsById);
-    if (!design) return;
+    const primaryDesign = resolvePrimaryDesign(doc, docsById);
+    if (!primaryDesign) return;
 
-    const feature = features[design.id];
-    if (!feature) return;
+    const thread = threads[primaryDesign.id];
+    if (!thread) return;
 
-    feature.allDocs.push(doc);
+    thread.allDocs.push(doc);
 
     switch (doc.type) {
       case 'plan':
-        feature.plans.push(doc);
+        thread.plans.push(doc);
         break;
       case 'idea':
-        feature.ideas.push(doc);
+        thread.ideas.push(doc);
         break;
       case 'ctx':
-        feature.contexts.push(doc);
+        thread.contexts.push(doc);
+        break;
+      case 'design':
+        thread.supportingDesigns.push(doc);
         break;
     }
   });
 
-  return Object.values(features);
+  return Object.values(threads);
 }
 ```
 
 ---
 
-## Step 4 — Integrate into ViewModel
+## Step 4 — Integrate Thread Builder into ViewModel
 
-```ts
-import { buildFeatures } from '../domain/featureBuilder';
+**File:** `packages/vscode/src/view/viewModel.ts`
 
-private groupByFeature(docs: BaseDoc[]): TreeNode[] {
-  const features = buildFeatures(docs);
+Modify the constructor to accept documents and build threads internally.
 
-  return features.map(feature => this.createFeatureNode(feature));
+```typescript
+import { buildThreads } from '../domain/threadBuilder';
+
+export class LoomViewModel {
+  private threads: Thread[];
+  private orphanDocs: Document[];
+
+  constructor(docs: Document[]) {
+    const allThreads = buildThreads(docs);
+    const assignedIds = new Set(allThreads.flatMap(t => t.allDocs.map(d => d.id)));
+    this.orphanDocs = docs.filter(d => !assignedIds.has(d.id));
+    this.threads = allThreads;
+  }
+
+  // ... rest of class
 }
 ```
 
 ---
 
-## Step 5 — Feature Tree Projection
+## Step 5 — Implement groupByThread Tree Projection
 
-Create hierarchical nodes.
+**File:** `packages/vscode/src/view/viewModel.ts`
 
-```ts
-private createFeatureNode(feature: Feature): TreeNode {
-  return {
-    type: 'group',
-    label: feature.design.title,
-    collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
-    children: [
-      this.createSection('Design', [feature.design]),
-      this.createSection('Plans', feature.plans),
-      this.createSection('Ideas', feature.ideas),
-      this.createSection('Contexts', feature.contexts)
-    ].filter(Boolean)
-  };
-}
-```
+```typescript
+private groupByThread(docs: Document[], state: ViewState): TreeNode[] {
+  const nodes: TreeNode[] = [];
 
----
+  for (const thread of this.threads) {
+    const threadDocs = docs.filter(d => thread.allDocs.includes(d));
+    if (threadDocs.length === 0) continue;
 
-### Section Helper
+    nodes.push({
+      type: 'group',
+      label: `🧵 ${thread.id}`,
+      collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
+      threadId: thread.id,
+      children: [
+        this.createSection('Primary Design', [thread.design]),
+        this.createSection('Supporting Designs', thread.supportingDesigns.filter(d => threadDocs.includes(d))),
+        this.createSection('Plans', thread.plans.filter(p => threadDocs.includes(p))),
+        this.createSection('Ideas', thread.ideas.filter(i => threadDocs.includes(i))),
+        this.createSection('Contexts', thread.contexts.filter(c => threadDocs.includes(c))),
+      ].filter(Boolean) as TreeNode[],
+    });
+  }
 
-```ts
-private createSection(label: string, docs: BaseDoc[]): TreeNode | undefined {
-  if (!docs.length) return undefined;
-
-  return {
-    type: 'group',
-    label,
-    collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
-    children: docs.map(d => this.createDocNode(d))
-  };
+  return nodes;
 }
 ```
 
@@ -203,89 +224,56 @@ private createSection(label: string, docs: BaseDoc[]): TreeNode | undefined {
 
 ## Step 6 — Handle Orphan Documents
 
-Docs without a valid Design should still be visible.
+**File:** `packages/vscode/src/view/viewModel.ts`
 
-```ts
-private appendOrphans(
-  nodes: TreeNode[],
-  docs: BaseDoc[]
-): TreeNode[] {
+Add orphan docs as an "Unassigned" group.
 
-  const assignedIds = new Set<string>();
+```typescript
+private groupByThread(docs: Document[], state: ViewState): TreeNode[] {
+  const nodes: TreeNode[] = [];
+  // ... thread nodes ...
 
-  nodes.forEach(featureNode => {
-    featureNode.children?.forEach(section => {
-      section.children?.forEach(docNode => {
-        if (docNode.doc) assignedIds.add(docNode.doc.id);
-      });
-    });
-  });
-
-  const orphans = docs.filter(d => !assignedIds.has(d.id));
-
-  if (!orphans.length) return nodes;
-
-  return [
-    ...nodes,
-    {
+  const orphanDocsInView = docs.filter(d => this.orphanDocs.includes(d));
+  if (orphanDocsInView.length > 0) {
+    nodes.push({
       type: 'group',
       label: 'Unassigned',
       collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
-      children: orphans.map(d => this.createDocNode(d))
-    }
-  ];
+      children: orphanDocsInView.map(d => this.createDocNode(d)),
+    });
+  }
+
+  return nodes;
 }
 ```
 
-Integrate into `groupByFeature`.
-
 ---
 
-## Step 7 — Sorting (Optional but Recommended)
+## Step 7 — Add Basic Sorting
 
-Basic ordering improves UX.
+**File:** `packages/vscode/src/view/viewModel.ts`
 
-```ts
-private sortDocs(docs: BaseDoc[]): BaseDoc[] {
-  return docs.sort((a, b) => a.title.localeCompare(b.title));
+Sort threads alphabetically and documents within sections.
+
+```typescript
+private sortThreads(threads: Thread[]): Thread[] {
+  return threads.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+private sortDocs(docs: Document[]): Document[] {
+  return docs.sort((a, b) => (a.title || a.id).localeCompare(b.title || b.id));
 }
 ```
 
-Apply to:
-
-* feature sections
-* feature list
+Apply sorting when building the tree.
 
 ---
 
-# Notes
+## Legend
 
-* Feature building MUST remain pure (no VSCode dependencies)
-* ViewModel handles projection only
-* TreeProvider remains unchanged
-
----
-
-# Expected Result
-
-```text
-Feature A (Design Title)
- ├── Design
- │    └── Design doc
- ├── Plans
- │    ├── Plan 1
- │    └── Plan 2
- ├── Ideas
- └── Contexts
-
-Feature B
- ...
-```
-
----
-
-# Next Step
-
-* Integrate Feature grouping into UI (toolbar toggle)
-* Add "Focus Feature" mode
-* Connect feature status filtering
+| Symbol | Meaning |
+|--------|---------|
+| ✅ | Done |
+| 🔄 | In Progress |
+| 🔳 | Pending |
+| ❌ | Cancelled |
