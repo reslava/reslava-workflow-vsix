@@ -64,9 +64,9 @@ The project is in **Phase 1: Core Engine Implementation**.
 - [x] Document templates and workflow configuration schema
 - [x] AI integration protocol and handshake design
 - [x] Multi-loom workspace architecture and vocabulary alignment
-- [ ] Core engine (reducers, derived state, event applier)
-- [ ] Filesystem layer (Markdown load/save)
-- [ ] CLI interface (`loom` command)
+- [x] Core engine (reducers, derived state, event applier)
+- [x] Filesystem layer (Markdown load/save)
+- [x] CLI interface (`loom` command)
 - [ ] VS Code extension (tree view, commands)
 - [ ] Native AI client integration
 
