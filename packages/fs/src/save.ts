@@ -1,7 +1,6 @@
-import matter from 'gray-matter';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as os from 'os';
+import yaml from 'js-yaml';
 import { Document } from '../../core/dist/types';
 
 export class FileWriteError extends Error {
@@ -18,19 +17,60 @@ export class FilePermissionError extends Error {
   }
 }
 
+function generateStepsTable(steps: any[], originalContent: string): string {
+  if (!steps.length) return originalContent;
+
+  const header = '| Done | # | Step | Files touched | Blocked by |';
+  const separator = '|---|---|---|---|---|';
+  const rows = steps.map(s => {
+    const done = s.done ? '✅' : '🔳';
+    const files = s.files_touched?.length ? s.files_touched.join(', ') : '—';
+    const blockers = s.blockedBy?.length ? s.blockedBy.join(', ') : '—';
+    return `| ${done} | ${s.order} | ${s.description} | ${files} | ${blockers} |`;
+  });
+
+  const newTable = [header, separator, ...rows].join('\n');
+
+  const stepsRegex = /# Steps\s*\n([\s\S]*?)(?=\n---|\n##|$)/i;
+  if (stepsRegex.test(originalContent)) {
+    return originalContent.replace(stepsRegex, `# Steps\n\n${newTable}`);
+  }
+  
+  const goalRegex = /(# Goal\s*\n[\s\S]*?)(?=\n---|\n##|$)/i;
+  if (goalRegex.test(originalContent)) {
+    return originalContent.replace(goalRegex, `$1\n\n# Steps\n\n${newTable}`);
+  }
+  
+  return `${originalContent}\n\n# Steps\n\n${newTable}`;
+}
+
 export async function saveDoc(doc: Document, filePath: string): Promise<void> {
-  const { content, _path, ...frontmatter } = doc as any;
+  // Separate internal properties from frontmatter
+  const { content, _path, steps, ...frontmatter } = doc as any;
 
   let bodyContent = content;
-  if (doc.type === 'plan' && (doc as any).steps) {
-    bodyContent = generateStepsTable((doc as any).steps, content);
+  if (doc.type === 'plan' && steps) {
+    bodyContent = generateStepsTable(steps, content);
   }
 
-  const output = matter.stringify(bodyContent, frontmatter);
+  // Use js-yaml directly for precise control over array formatting
+  const frontmatterStr = yaml.dump(frontmatter, {
+    flowLevel: 1,
+    lineWidth: -1,
+    noRefs: true,
+    replacer: (key: any, value: any) => {
+      if (Array.isArray(value)) {
+        // Force this array to be dumped in flow style
+        return { value, flowLevel: 1 };
+      }
+      return value;
+    },
+  } as any);
+  
+  const output = `---\n${frontmatterStr}---\n\n${bodyContent}`;
 
   await fs.ensureDir(path.dirname(filePath));
 
-  // Use a temp file in the same directory to avoid cross-device issues
   const tempPath = path.join(
     path.dirname(filePath),
     `.loom-tmp-${Date.now()}-${path.basename(filePath)}.tmp`
@@ -38,11 +78,9 @@ export async function saveDoc(doc: Document, filePath: string): Promise<void> {
 
   try {
     await fs.writeFile(tempPath, output, { mode: 0o644 });
-    
     try {
       await fs.rename(tempPath, filePath);
     } catch (renameErr: any) {
-      // Cross-device rename not allowed – fallback to copy + delete
       if (renameErr.code === 'EXDEV') {
         await fs.copyFile(tempPath, filePath);
         await fs.remove(tempPath);
@@ -61,31 +99,4 @@ export async function saveDoc(doc: Document, filePath: string): Promise<void> {
     }
     throw new FileWriteError(filePath, e);
   }
-}
-
-function generateStepsTable(steps: any[], originalContent: string): string {
-  if (!steps.length) return originalContent;
-
-  const header = '| Done | # | Step | Files touched | Blocked by |';
-  const separator = '|---|---|---|---|---|';
-  const rows = steps.map(s => {
-    const done = s.done ? '✅' : '🔳';
-    const files = s.files_touched?.length ? s.files_touched.join(', ') : '—';
-    const blockers = s.blockedBy?.length ? s.blockedBy.join(', ') : '—';
-    return `| ${done} | ${s.order} | ${s.description} | ${files} | ${blockers} |`;
-  });
-
-  const newTable = [header, separator, ...rows].join('\n');
-
-  const stepsRegex = /# Steps\n\n([\s\S]*?)(?=\n---|\n##|$)/;
-  if (stepsRegex.test(originalContent)) {
-    return originalContent.replace(stepsRegex, `# Steps\n\n${newTable}`);
-  }
-  
-  const goalRegex = /(# Goal\n[\s\S]*?)(?=\n---|\n##|$)/;
-  if (goalRegex.test(originalContent)) {
-    return originalContent.replace(goalRegex, `$1\n\n# Steps\n\n${newTable}`);
-  }
-  
-  return `${originalContent}\n\n# Steps\n\n${newTable}`;
 }

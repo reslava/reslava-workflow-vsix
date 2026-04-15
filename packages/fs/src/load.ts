@@ -42,7 +42,7 @@ export async function loadDoc(filePath: string): Promise<Document> {
   } as Document;
 
   // Parse steps for plan documents
-  if (doc.type === 'plan' && parsed.content) {
+  if (doc.type === 'plan') {
     doc.steps = parseStepsTable(parsed.content);
   }
 
@@ -52,28 +52,43 @@ export async function loadDoc(filePath: string): Promise<Document> {
 function parseStepsTable(content: string): any[] {
   const steps: any[] = [];
   
-  // Find the steps table: between "# Steps" and the next "---" or "##"
-  const stepsMatch = content.match(/# Steps\n\n([\s\S]*?)(?=\n---|\n##|$)/);
-  if (!stepsMatch) return steps;
+  // Find the steps section: from "# Steps" to the next "---" or "##" or end of file
+  const stepsSectionMatch = content.match(/# Steps\s*\n([\s\S]*?)(?=\n---|\n##|$)/i);
+  if (!stepsSectionMatch) {
+    return steps;
+  }
   
-  const table = stepsMatch[1];
-  const lines = table.split('\n').filter(l => l.includes('|') && !l.includes('|---') && !l.includes('Done | #'));
+  const section = stepsSectionMatch[1];
+  const lines = section.split('\n');
   
+  // Find the table rows (lines with pipes, excluding the header separator)
   for (const line of lines) {
-    const cols = line.split('|').map(c => c.trim()).filter(Boolean);
-    if (cols.length < 5) continue;
+    // Skip lines that don't look like table rows
+    if (!line.includes('|') || line.includes('|---')) {
+      continue;
+    }
     
-    // Columns: Done, #, Step, Files touched, Blocked by
+    // Skip the header row if it contains "Done" and "Step"
+    if (line.includes('Done') && line.includes('Step')) {
+      continue;
+    }
+    
+    const cols = line.split('|').map(c => c.trim()).filter(c => c !== '');
+    if (cols.length < 4) continue;
+    
+    // Expected columns: Done, #, Step, Files touched, Blocked by
     const doneSymbol = cols[0];
-    const order = parseInt(cols[1]);
+    const order = parseInt(cols[1], 10);
     const description = cols[2];
-    const filesTouched = cols[3] === '—' ? [] : cols[3].split(',').map(s => s.trim());
+    const filesTouched = cols[3] === '—' || cols[3] === '-' ? [] : cols[3].split(',').map(s => s.trim());
     const blockedByRaw = cols[4] || '—';
     
     const done = doneSymbol === '✅';
-    const blockedBy = blockedByRaw === '—' ? [] : blockedByRaw.split(',').map(s => s.trim());
+    const blockedBy = blockedByRaw === '—' || blockedByRaw === '-' ? [] : blockedByRaw.split(',').map(s => s.trim());
     
-    steps.push({ order, description, done, files_touched: filesTouched, blockedBy });
+    if (!isNaN(order)) {
+      steps.push({ order, description, done, files_touched: filesTouched, blockedBy });
+    }
   }
   
   return steps;

@@ -40,10 +40,10 @@ function determinePathForDoc(doc: Document, threadId: string): string {
  */
 export async function saveThread(thread: Thread): Promise<void> {
   for (const doc of thread.allDocs) {
-    let filePath = (doc as any)._path;
+    let filePath = (doc as any)._path;    
     
     if (!filePath) {
-      filePath = determinePathForDoc(doc, thread.id);
+      filePath = determinePathForDoc(doc, thread.id);      
     }
     
     await saveDoc(doc, filePath);

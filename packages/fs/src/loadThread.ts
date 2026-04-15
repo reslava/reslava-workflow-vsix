@@ -51,7 +51,7 @@ export async function loadThread(threadId: string): Promise<Thread> {
   }
 
   const primaryDesign = docs.find(d => 
-    d.type === 'design' && (d as DesignDoc).role === 'primary'
+    d.type === 'design' && (d as any).role === 'primary'
   ) as DesignDoc | undefined;
 
   if (!primaryDesign) {

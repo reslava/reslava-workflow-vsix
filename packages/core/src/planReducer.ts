@@ -24,7 +24,7 @@ export function planReducer(doc: PlanDoc, event: PlanEvent): PlanDoc {
             }
             return { ...doc, status: 'implementing', updated };
 
-        case 'COMPLETE_STEP': {
+        case 'COMPLETE_STEP': {                        
             if (doc.status !== 'implementing') {
                 throw new Error(`Invalid transition: COMPLETE_STEP requires status 'implementing', got '${doc.status}'`);
             }
@@ -34,7 +34,7 @@ export function planReducer(doc: PlanDoc, event: PlanEvent): PlanDoc {
                 throw new Error(`Invalid step index: ${stepIndex}. Plan has ${doc.steps.length} steps.`);
             }
 
-            const steps = doc.steps.map((step, idx): PlanStep => {
+            const steps = doc.steps.map((step, idx) => {
                 if (idx === stepIndex) {
                     return { ...step, done: true };
                 }
@@ -48,7 +48,7 @@ export function planReducer(doc: PlanDoc, event: PlanEvent): PlanDoc {
                 ...doc,
                 steps,
                 status: newStatus,
-                updated,
+                updated: new Date().toISOString().split('T')[0],
             };
         }
 

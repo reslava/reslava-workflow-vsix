@@ -7,6 +7,10 @@ import { listCommand } from './commands/list';
 import { currentCommand } from './commands/current';
 import { statusCommand } from './commands/status';
 import { validateCommand } from './commands/validate';
+import { refineCommand } from './commands/refine';
+import { startPlanCommand } from './commands/startPlan';
+import { completeStepCommand } from './commands/completeStep';
+import { summariseCommand } from './commands/summarise';
 
 const program = new Command();
 
@@ -57,6 +61,28 @@ program
   .option('--all', 'Validate all threads')
   .option('--fix', 'Attempt to fix issues (not yet implemented)')
   .option('--verbose', 'Show detailed issues for all threads')
-  .action(validateCommand);  
+  .action(validateCommand); 
+
+program
+  .command('refine-design <thread-id>')
+  .description('Fire REFINE_DESIGN event (increment version, mark plans stale)')
+  .action(refineCommand); 
+
+program
+  .command('start-plan <plan-id>')
+  .description('Fire START_PLAN event (activate implementation)')
+  .action(startPlanCommand);  
+
+program
+  .command('complete-step <plan-id>')
+  .description('Mark a plan step as done')
+  .requiredOption('--step <n>', 'Step number to complete')
+  .action(completeStepCommand);  
+
+program
+  .command('summarise-context <thread-id>')
+  .description('Generate or regenerate the -ctx.md context summary')
+  .option('--force', 'Overwrite existing summary even if fresh')
+  .action(summariseCommand);  
 
 program.parse(process.argv);

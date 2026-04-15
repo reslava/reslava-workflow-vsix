@@ -34,13 +34,13 @@ export function applyEvent(thread: Thread, event: WorkflowEvent): Thread {
         // Plan events
         if (doc.type === 'plan') {
             const planDoc = doc as PlanDoc;
-            // Event may include a planId to target a specific plan
-            const eventPlanId = (event as any).planId;
-            if (eventPlanId && planDoc.id !== eventPlanId) continue;
+            const eventPlanId = (event as any).planId;                       
+            
+            if (eventPlanId && planDoc.id !== eventPlanId) {                
+                continue;
+            }
 
-            if (
-                ['ACTIVATE_PLAN', 'START_IMPLEMENTING_PLAN', 'COMPLETE_STEP', 'FINISH_PLAN', 'BLOCK_PLAN', 'UNBLOCK_PLAN', 'CANCEL_PLAN'].includes(event.type)
-            ) {
+            if (['ACTIVATE_PLAN', 'START_IMPLEMENTING_PLAN', 'COMPLETE_STEP', 'FINISH_PLAN', 'BLOCK_PLAN', 'UNBLOCK_PLAN', 'CANCEL_PLAN'].includes(event.type)) {                
                 updatedDocs[i] = planReducer(planDoc, event as any);
             }
         }
