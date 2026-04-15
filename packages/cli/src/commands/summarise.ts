@@ -4,7 +4,7 @@ import * as path from 'path';
 import matter from 'gray-matter';
 import { loadThread } from '../../../fs/dist/loadThread';
 import { getActiveLoomRoot } from '../../../fs/dist/utils';
-import { serializeFrontmatter } from '../../../fs/dist/serializeFrontmatter';
+import { serializeFrontmatter } from '../../../core/dist/frontmatterUtils';
 
 /**
  * Extracts the content of a section by its heading.

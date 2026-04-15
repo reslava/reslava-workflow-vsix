@@ -33,7 +33,7 @@ Implement automatic ID generation, temporary draft IDs, and the `loom rename` co
 
 | Done | # | Step | Files touched | Blocked by |
 |---|---|---|---|---|
-| 🔳 | 1 | Create ID utilities (kebab-case, uniqueness check) | `packages/core/src/idUtils.ts` | — |
+| ✅ | 1 | Create ID utilities (kebab-case, uniqueness check) | `packages/core/src/idUtils.ts` | — |
 | 🔳 | 2 | Update `loom weave` to create temporary IDs | `packages/cli/src/commands/weave.ts` | Step 1 |
 | 🔳 | 3 | Implement `loom finalize` command | `packages/cli/src/commands/finalize.ts` | Steps 1, 2 |
 | 🔳 | 4 | Implement `loom rename` command with reference updating | `packages/cli/src/commands/rename.ts` | Step 1 |

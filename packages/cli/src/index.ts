@@ -11,6 +11,7 @@ import { refineCommand } from './commands/refine';
 import { startPlanCommand } from './commands/startPlan';
 import { completeStepCommand } from './commands/completeStep';
 import { summariseCommand } from './commands/summarise';
+import { weaveIdeaCommand } from './commands/weave';
 
 const program = new Command();
 
@@ -83,6 +84,12 @@ program
   .command('summarise-context <thread-id>')
   .description('Generate or regenerate the -ctx.md context summary')
   .option('--force', 'Overwrite existing summary even if fresh')
-  .action(summariseCommand);  
+  .action(summariseCommand);
+  
+program
+    .command('weave idea <title>')
+    .description('Create a new idea document')
+    .option('--thread <name>', 'Place the idea in a specific thread folder')
+    .action(weaveIdeaCommand);  
 
 program.parse(process.argv);

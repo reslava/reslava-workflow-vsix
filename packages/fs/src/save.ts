@@ -1,7 +1,7 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { Document } from '../../core/dist/types';
-import { serializeFrontmatter } from './serializeFrontmatter';
+import { serializeFrontmatter } from '../../core/dist/frontmatterUtils';
 
 export class FileWriteError extends Error {
   constructor(public filePath: string, originalError: Error) {
