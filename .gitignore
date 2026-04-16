@@ -14,6 +14,7 @@ pnpm-lock.yaml
 out/
 dist/
 *.vsix  # Keep ignored; store local copies in ~/vsix-archive/
+*.tsbuildinfo
 
 # --- VS Code Extension ---
 .vscode-test/
@@ -62,4 +63,4 @@ docs/internal/
 
 # --- Claude ---
 CLAUDE.md
-.claude/*.tsbuildinfo
+.claude/
