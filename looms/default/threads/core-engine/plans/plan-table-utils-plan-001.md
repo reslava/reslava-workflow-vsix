@@ -2,7 +2,7 @@
 type: plan
 id: plan-table-utils-plan-001
 title: "Extract Plan Table Utilities"
-status: draft
+status: done
 created: 2026-04-16
 version: 1
 design_version: 1
@@ -33,11 +33,11 @@ Centralize all Markdown table parsing and generation for plan steps into a singl
 
 | Done | # | Step | Files touched | Blocked by |
 |---|---|---|---|---|
-| 🔳 | 1 | Create `planTableUtils.ts` with `parseStepsTable` and `generateStepsTable` | `packages/core/src/planTableUtils.ts` | — |
-| 🔳 | 2 | Refactor `load.ts` to use `parseStepsTable` | `packages/fs/src/load.ts` | Step 1 |
-| 🔳 | 3 | Refactor `save.ts` to use `generateStepsTable` | `packages/fs/src/save.ts` | Step 1 |
-| 🔳 | 4 | Remove duplicated table logic from `load.ts` and `save.ts` | Both files | Steps 2-3 |
-| 🔳 | 5 | Run full test suite | `tests/*` | Step 4 |
+| ✅ | 1 | Create `planTableUtils.ts` with `parseStepsTable` and `generateStepsTable` | `packages/core/src/planTableUtils.ts` | — |
+| ✅  | 2 | Refactor `load.ts` to use `parseStepsTable` | `packages/fs/src/load.ts` | Step 1 |
+| ✅ | 3 | Refactor `save.ts` to use `generateStepsTable` | `packages/fs/src/save.ts` | Step 1 |
+| ✅ | 4 | Remove duplicated table logic from `load.ts` and `save.ts` | Both files | Steps 2-3 |
+| ✅ | 5 | Run full test suite | `tests/*` | Step 4 |
 
 ---
 

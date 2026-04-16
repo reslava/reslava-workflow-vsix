@@ -2,7 +2,7 @@
 type: plan
 id: path-utils-plan-001
 title: "Extract Path Utilities"
-status: draft
+status: done
 created: 2026-04-16
 version: 1
 design_version: 1
@@ -33,12 +33,12 @@ Centralize all filesystem path resolution and traversal logic into a single modu
 
 | Done | # | Step | Files touched | Blocked by |
 |---|---|---|---|---|
-| 🔳 | 1 | Create `pathUtils.ts` with core traversal functions | `packages/fs/src/pathUtils.ts` | — |
-| 🔳 | 2 | Refactor `finalize.ts` to use `pathUtils` | `packages/cli/src/commands/finalize.ts` | Step 1 |
-| 🔳 | 3 | Refactor `rename.ts` to use `pathUtils` | `packages/cli/src/commands/rename.ts` | Step 1 |
-| 🔳 | 4 | Refactor `buildLinkIndex.ts` to use `pathUtils` | `packages/fs/src/buildLinkIndex.ts` | Step 1 |
-| 🔳 | 5 | Remove duplicated functions from refactored files | All above | Steps 2-4 |
-| 🔳 | 6 | Run full test suite | `tests/*` | Step 5 |
+| ✅ | 1 | Create `pathUtils.ts` with core traversal functions | `packages/fs/src/pathUtils.ts` | — |
+| ✅ | 2 | Refactor `finalize.ts` to use `pathUtils` | `packages/cli/src/commands/finalize.ts` | Step 1 |
+| ✅ | 3 | Refactor `rename.ts` to use `pathUtils` | `packages/cli/src/commands/rename.ts` | Step 1 |
+| ✅ | 4 | Refactor `buildLinkIndex.ts` to use `pathUtils` | `packages/fs/src/buildLinkIndex.ts` | Step 1 |
+| ✅ | 5 | Remove duplicated functions from refactored files | All above | Steps 2-4 |
+| ✅ | 6 | Run full test suite | `tests/*` | Step 5 |
 
 ---
 
