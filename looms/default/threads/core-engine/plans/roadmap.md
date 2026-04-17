@@ -9,7 +9,8 @@
 | **2. Domain Restructuring** | `plan-refactor-design` (pilot), applied to `design`, `idea`, `ctx` | ✅ | Entities, events, reducers fully extracted |
 | **3. Application Layer** | `app-layer-refactor-plan-001` | ✅ | Complete; CLI commands use `app` use‑cases |
 | **4. Base Document** | `base-doc-plan-001` | ✅ | Design created; plan ready for implementation |
-| **5. Body Generators** | `body-generators-plan-001` | ⏳ | Pending |
+| **5. Body Generators** | `body-generators-plan-001` | ✅ | Done |
+| **5. app use cases completion** | `app-use-cases-completion-plan` | 🔄 | Active |
 | **6. Validation Extraction** | `validation-utils-plan-001` | ⏳ | Pending |
 
 ### 🧵 Immediate Next Action

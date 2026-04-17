@@ -1,0 +1,343 @@
+---
+type: plan
+id: app-use-cases-completion-plan
+title: "Complete Application Layer Use‑Cases and Thin CLI Wrappers"
+status: draft
+created: 2026-04-17
+version: 1
+tags: [app, cli, refactor, use-cases]
+parent_id: app-layer-refactor-design
+target_version: "0.5.0"
+requires_load: [app-layer-refactor-design]
+---
+
+# Plan — Complete Application Layer Use‑Cases and Thin CLI Wrappers
+
+| | |
+|---|---|
+| **Created** | 2026-04-17 |
+| **Status** | DRAFT |
+| **Design** | `app-layer-refactor-design.md` |
+| **Target version** | 0.5.0 |
+
+---
+
+# Goal
+
+Move all remaining orchestration logic out of the CLI layer into dedicated `app` use‑cases. Implement the missing `weaveDesign` and `weavePlan` use‑cases to complete the core workflow. Refactor existing CLI commands to become thin wrappers that only handle user input and output. This establishes a clean, reusable application layer that can be shared identically between the CLI and the future VS Code extension.
+
+---
+
+# Steps
+
+| Done | # | Step | Files touched | Blocked by |
+|---|---|---|---|---|
+| 🔳 | 1 | Extract `weaveIdea` use‑case from CLI | `app/src/weaveIdea.ts`, `cli/src/commands/weave.ts` | — |
+| 🔳 | 2 | Implement `weaveDesign` use‑case | `app/src/weaveDesign.ts` | Step 1 |
+| 🔳 | 3 | Implement `weavePlan` use‑case | `app/src/weavePlan.ts` | Step 1 |
+| 🔳 | 4 | Add `weave design` and `weave plan` CLI commands | `cli/src/commands/weaveDesign.ts`, `cli/src/commands/weavePlan.ts`, `cli/src/index.ts` | Steps 2, 3 |
+| 🔳 | 5 | Refactor remaining CLI commands to use `app` layer exclusively | `cli/src/commands/*.ts` | Step 1 |
+| 🔳 | 6 | Update `app/src/index.ts` barrel exports | `app/src/index.ts` | Steps 1‑4 |
+| 🔳 | 7 | Run full build and test suite | All packages, `tests/*` | Step 6 |
+
+---
+
+## Step 1 — Extract `weaveIdea` Use‑Case from CLI
+
+Move the orchestration logic currently in `cli/src/commands/weave.ts` into a new use‑case file.
+
+**File:** `app/src/weaveIdea.ts`
+
+```typescript
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { getActiveLoomRoot } from '../../fs/dist';
+import { generateTempId, toKebabCaseId } from '../../core/dist';
+import { createBaseFrontmatter, serializeFrontmatter } from '../../core/dist';
+import { generateIdeaBody } from '../../core/dist';
+
+export interface WeaveIdeaInput {
+    title: string;
+    thread?: string;
+}
+
+export interface WeaveIdeaDeps {
+    getActiveLoomRoot: typeof getActiveLoomRoot;
+    fs: typeof fs;
+}
+
+export async function weaveIdea(
+    input: WeaveIdeaInput,
+    deps: WeaveIdeaDeps
+): Promise<{ tempId: string; filePath: string }> {
+    const loomRoot = deps.getActiveLoomRoot();
+    const threadsDir = path.join(loomRoot, 'threads');
+    const threadName = input.thread || toKebabCaseId(input.title);
+    const threadPath = path.join(threadsDir, threadName);
+
+    await deps.fs.ensureDir(threadPath);
+
+    const tempId = generateTempId('idea');
+    const frontmatter = createBaseFrontmatter('idea', tempId, input.title);
+    const content = generateIdeaBody(input.title);
+
+    const frontmatterYaml = serializeFrontmatter(frontmatter);
+    const output = `${frontmatterYaml}\n${content}`;
+    const filePath = path.join(threadPath, `${tempId}.md`);
+
+    await deps.fs.outputFile(filePath, output);
+
+    return { tempId, filePath };
+}
+```
+
+**Update `cli/src/commands/weave.ts`** to become a thin wrapper:
+
+```typescript
+import chalk from 'chalk';
+import { weaveIdea } from '../../../app/dist';
+import { getActiveLoomRoot } from '../../../fs/dist';
+import * as fs from 'fs-extra';
+
+export async function weaveIdeaCommand(title: string, options: { thread?: string }): Promise<void> {
+    try {
+        const result = await weaveIdea(
+            { title, thread: options.thread },
+            { getActiveLoomRoot, fs }
+        );
+        console.log(chalk.green(`🧵 Idea woven at ${result.filePath}`));
+        console.log(chalk.gray(`   Temporary ID: ${result.tempId}`));
+        console.log(chalk.gray(`   Run 'loom finalize ${result.tempId}' when the title is final.`));
+    } catch (e: any) {
+        console.error(chalk.red(`❌ ${e.message}`));
+        process.exit(1);
+    }
+}
+```
+
+---
+
+## Step 2 — Implement `weaveDesign` Use‑Case
+
+Create the use‑case for generating a design document from an existing idea.
+
+**File:** `app/src/weaveDesign.ts`
+
+```typescript
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { getActiveLoomRoot } from '../../fs/dist';
+import { loadThread } from '../../fs/dist';
+import { generatePermanentId } from '../../core/dist';
+import { createBaseFrontmatter, serializeFrontmatter } from '../../core/dist';
+import { generateDesignBody } from '../../core/dist';
+
+export interface WeaveDesignInput {
+    threadId: string;
+    title?: string;
+}
+
+export interface WeaveDesignDeps {
+    getActiveLoomRoot: typeof getActiveLoomRoot;
+    loadThread: typeof loadThread;
+    fs: typeof fs;
+}
+
+export async function weaveDesign(
+    input: WeaveDesignInput,
+    deps: WeaveDesignDeps
+): Promise<{ id: string; filePath: string }> {
+    const loomRoot = deps.getActiveLoomRoot();
+    const thread = await deps.loadThread(input.threadId);
+    
+    // Use existing idea title or provided title
+    const designTitle = input.title || thread.idea?.title || `${input.threadId} Design`;
+    
+    const existingIds = new Set(thread.allDocs.map(d => d.id));
+    const permanentId = generatePermanentId(designTitle, 'design', existingIds);
+    
+    const frontmatter = createBaseFrontmatter('design', permanentId, designTitle, thread.idea?.id || null);
+    (frontmatter as any).role = 'primary';
+    
+    const content = generateDesignBody(designTitle, 'User');
+    
+    const frontmatterYaml = serializeFrontmatter(frontmatter);
+    const output = `${frontmatterYaml}\n${content}`;
+    
+    const threadPath = path.join(loomRoot, 'threads', input.threadId);
+    const filePath = path.join(threadPath, `${permanentId}.md`);
+    
+    await deps.fs.outputFile(filePath, output);
+    
+    return { id: permanentId, filePath };
+}
+```
+
+---
+
+## Step 3 — Implement `weavePlan` Use‑Case
+
+Create the use‑case for generating a plan from a finalized design.
+
+**File:** `app/src/weavePlan.ts`
+
+```typescript
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import { getActiveLoomRoot } from '../../fs/dist';
+import { loadThread } from '../../fs/dist';
+import { generatePlanId } from '../../fs/dist';
+import { createBaseFrontmatter, serializeFrontmatter } from '../../core/dist';
+import { generatePlanBody } from '../../core/dist';
+
+export interface WeavePlanInput {
+    threadId: string;
+    title?: string;
+    goal?: string;
+}
+
+export interface WeavePlanDeps {
+    getActiveLoomRoot: typeof getActiveLoomRoot;
+    loadThread: typeof loadThread;
+    fs: typeof fs;
+}
+
+export async function weavePlan(
+    input: WeavePlanInput,
+    deps: WeavePlanDeps
+): Promise<{ id: string; filePath: string }> {
+    const loomRoot = deps.getActiveLoomRoot();
+    const thread = await deps.loadThread(input.threadId);
+    
+    if (thread.design.status !== 'done') {
+        throw new Error(`Design must be 'done' before creating a plan. Current status: ${thread.design.status}`);
+    }
+    
+    const planTitle = input.title || `${input.threadId} Plan`;
+    const existingPlanIds = thread.plans.map(p => p.id);
+    const planId = generatePlanId(input.threadId, existingPlanIds);
+    
+    const frontmatter = createBaseFrontmatter('plan', planId, planTitle, thread.design.id);
+    (frontmatter as any).design_version = thread.design.version;
+    (frontmatter as any).target_version = thread.design.target_release || '0.1.0';
+    
+    const content = generatePlanBody(planTitle, input.goal);
+    
+    const frontmatterYaml = serializeFrontmatter(frontmatter);
+    const output = `${frontmatterYaml}\n${content}`;
+    
+    const threadPath = path.join(loomRoot, 'threads', input.threadId);
+    const plansDir = path.join(threadPath, 'plans');
+    await deps.fs.ensureDir(plansDir);
+    
+    const filePath = path.join(plansDir, `${planId}.md`);
+    await deps.fs.outputFile(filePath, output);
+    
+    return { id: planId, filePath };
+}
+```
+
+---
+
+## Step 4 — Add `weave design` and `weave plan` CLI Commands
+
+Create thin CLI wrappers for the new use‑cases.
+
+**File:** `cli/src/commands/weaveDesign.ts`
+
+```typescript
+import chalk from 'chalk';
+import { weaveDesign } from '../../../app/dist';
+import { getActiveLoomRoot, loadThread } from '../../../fs/dist';
+import * as fs from 'fs-extra';
+
+export async function weaveDesignCommand(threadId: string, options: { title?: string }): Promise<void> {
+    try {
+        const result = await weaveDesign(
+            { threadId, title: options.title },
+            { getActiveLoomRoot, loadThread, fs }
+        );
+        console.log(chalk.green(`🧵 Design woven at ${result.filePath}`));
+        console.log(chalk.gray(`   ID: ${result.id}`));
+    } catch (e: any) {
+        console.error(chalk.red(`❌ ${e.message}`));
+        process.exit(1);
+    }
+}
+```
+
+**File:** `cli/src/commands/weavePlan.ts`
+
+```typescript
+import chalk from 'chalk';
+import { weavePlan } from '../../../app/dist';
+import { getActiveLoomRoot, loadThread } from '../../../fs/dist';
+import * as fs from 'fs-extra';
+
+export async function weavePlanCommand(threadId: string, options: { title?: string; goal?: string }): Promise<void> {
+    try {
+        const result = await weavePlan(
+            { threadId, title: options.title, goal: options.goal },
+            { getActiveLoomRoot, loadThread, fs }
+        );
+        console.log(chalk.green(`🧵 Plan woven at ${result.filePath}`));
+        console.log(chalk.gray(`   ID: ${result.id}`));
+    } catch (e: any) {
+        console.error(chalk.red(`❌ ${e.message}`));
+        process.exit(1);
+    }
+}
+```
+
+**Update `cli/src/index.ts`** to register the new commands.
+
+---
+
+## Step 5 — Refactor Remaining CLI Commands
+
+Ensure all existing CLI commands (`finalize`, `rename`, `refine`, `startPlan`, `completeStep`, `summarise`, `validate`, `status`) are thin wrappers that delegate to the corresponding `app` use‑cases. (This was largely done in `app-layer-refactor-plan-001`; this step is a verification pass.)
+
+---
+
+## Step 6 — Update `app/src/index.ts` Barrel Exports
+
+Add the new use‑cases to the barrel export.
+
+```typescript
+export { weaveIdea, WeaveIdeaInput, WeaveIdeaDeps } from './weaveIdea';
+export { weaveDesign, WeaveDesignInput, WeaveDesignDeps } from './weaveDesign';
+export { weavePlan, WeavePlanInput, WeavePlanDeps } from './weavePlan';
+```
+
+---
+
+## Step 7 — Run Full Build and Test Suite
+
+```bash
+./scripts/build-all.sh
+npx ts-node --project tests/tsconfig.json tests/multi-loom.test.ts
+npx ts-node --project tests/tsconfig.json tests/commands.test.ts
+npx ts-node --project tests/tsconfig.json tests/id-management.test.ts
+```
+
+All tests must pass. CLI commands should behave identically to before.
+
+---
+
+# Outcome
+
+- Complete, reusable `app` layer covering the full happy‑path workflow.
+- CLI commands are thin presentation wrappers.
+- Zero code duplication between CLI and future VS Code extension.
+- Architecture is fully validated and ready for Phase 6 (Validation Extraction).
+
+---
+
+## Legend
+
+| Symbol | Meaning |
+|--------|---------|
+| ✅ | Done |
+| 🔄 | In Progress |
+| 🔳 | Pending |
+| ❌ | Cancelled |
