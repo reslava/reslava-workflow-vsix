@@ -15,6 +15,7 @@ import { finalizeCommand } from './commands/finalize';
 import { renameCommand } from './commands/rename';
 import { weaveIdeaCommand } from './commands/weave';
 import { weaveDesignCommand } from './commands/weaveDesign';
+import { weavePlanCommand } from './commands/weavePlan';
 
 const program = new Command();
 
@@ -115,5 +116,12 @@ weaveCmd
     .description('Create a new design document from an existing idea')
     .option('--title <title>', 'Custom title for the design')
     .action((threadId, options) => weaveDesignCommand(threadId, options));
+
+weaveCmd
+    .command('plan <thread-id>')
+    .description('Create a new plan from a finalized design')
+    .option('--title <title>', 'Custom title for the plan')
+    .option('--goal <goal>', 'Goal description for the plan')
+    .action((threadId, options) => weavePlanCommand(threadId, options));
 
 program.parse(process.argv);
