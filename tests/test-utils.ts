@@ -2,6 +2,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
 import { execSync } from 'child_process';
+import { generateDesignBody, serializeFrontmatter } from '../packages/core/dist/index.js';
 
 export const TEST_ROOT = path.join(os.tmpdir(), 'loom-tests');
 
@@ -73,10 +74,11 @@ export async function createDesignDoc(
         role,
     };
 
-    const content = `## Goal\n\nTest design for ${threadId}.\n\n## Context\n\nTest context.\n`;
+    // Use the body generator from the core barrel export
+    const content = generateDesignBody(`${threadId} Design`, 'User');
     
-    const yamlLines = Object.entries(frontmatter).map(([k, v]) => `${k}: ${JSON.stringify(v)}`);
-    const output = `---\n${yamlLines.join('\n')}\n---\n\n${content}`;
+    const frontmatterYaml = serializeFrontmatter(frontmatter);
+    const output = `${frontmatterYaml}\n${content}`;
 
     await fs.outputFile(designPath, output);
 }

@@ -41,3 +41,11 @@ export { createEmptyIndex, LinkIndex, DocumentEntry, StepBlocker } from './linkI
 // Types (Shared)
 // ============================================================================
 export { Document, DocumentStatus, WorkflowEvent, DiagnosticEvent, ThreadStatus, ThreadPhase } from './types';
+
+// ============================================================================
+// Body Generators
+// ============================================================================
+export { generateIdeaBody } from './bodyGenerators/ideaBody';
+export { generateDesignBody } from './bodyGenerators/designBody';
+export { generatePlanBody } from './bodyGenerators/planBody';
+export { generateCtxBody, CtxSummaryData } from './bodyGenerators/ctxBody';
