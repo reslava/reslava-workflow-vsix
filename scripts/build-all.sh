@@ -3,6 +3,9 @@
 
 set -e  # Stop on first error
 
+echo "🔍 Linting core purity..."
+npm run lint
+
 echo "🧹 Cleaning dist folders..."
 rm -rf packages/core/dist packages/fs/dist packages/app/dist packages/cli/dist
 
