@@ -2,7 +2,7 @@
 type: plan
 id: body-generators-plan-001
 title: "Implement Document Body Generators"
-status: draft
+status: done
 created: 2026-04-16
 version: 1
 design_version: 1
@@ -33,15 +33,15 @@ Replace hardcoded document templates and the `.loom/templates/` directory with p
 
 | Done | # | Step | Files touched | Blocked by |
 |---|---|---|---|---|
-| 🔳 | 1 | Create `ideaBody.ts` generator | `packages/core/src/bodyGenerators/ideaBody.ts` | — |
-| 🔳 | 2 | Create `designBody.ts` generator | `packages/core/src/bodyGenerators/designBody.ts` | — |
-| 🔳 | 3 | Create `planBody.ts` generator | `packages/core/src/bodyGenerators/planBody.ts` | — |
-| 🔳 | 4 | Create `ctxBody.ts` generator | `packages/core/src/bodyGenerators/ctxBody.ts` | — |
-| 🔳 | 5 | Update `weave.ts` to use generators | `packages/cli/src/commands/weave.ts` | Steps 1-4 |
-| 🔳 | 6 | Update `summarise.ts` to use `ctxBody` | `packages/cli/src/commands/summarise.ts` | Step 4 |
-| 🔳 | 7 | Update test utilities to use generators | `tests/test-utils.ts` | Steps 1-4 |
-| 🔳 | 8 | Remove `.loom/templates/` directory | `.loom/templates/` | Step 5 |
-| 🔳 | 9 | Run full test suite | `tests/*` | All |
+| ✅ | 1 | Create `ideaBody.ts` generator | `packages/core/src/bodyGenerators/ideaBody.ts` | — |
+| ✅ | 2 | Create `designBody.ts` generator | `packages/core/src/bodyGenerators/designBody.ts` | — |
+| ✅ | 3 | Create `planBody.ts` generator | `packages/core/src/bodyGenerators/planBody.ts` | — |
+| ✅ | 4 | Create `ctxBody.ts` generator | `packages/core/src/bodyGenerators/ctxBody.ts` | — |
+| ✅ | 5 | Update `weave.ts` to use generators | `packages/cli/src/commands/weave.ts` | Steps 1-4 |
+| ✅ | 6 | Update `summarise.ts` to use `ctxBody` | `packages/cli/src/commands/summarise.ts` | Step 4 |
+| ✅ | 7 | Update test utilities to use generators | `tests/test-utils.ts` | Steps 1-4 |
+| ✅ | 8 | Remove `.loom/templates/` directory | `.loom/templates/` | Step 5 |
+| ✅ | 9 | Run full test suite | `tests/*` | All |
 
 ---
 
