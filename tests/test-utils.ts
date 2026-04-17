@@ -3,15 +3,8 @@ import * as path from 'path';
 import * as os from 'os';
 import { execSync } from 'child_process';
 
-/**
- * Root directory for all test looms.
- * Uses the system temp directory to avoid polluting the project.
- */
 export const TEST_ROOT = path.join(os.tmpdir(), 'loom-tests');
 
-/**
- * Run a `loom` command using the local CLI entry point.
- */
 export function runLoom(
     args: string,
     cwd?: string
@@ -32,10 +25,6 @@ export function runLoom(
     }
 }
 
-/**
- * Create a fresh test loom directory.
- * Returns the absolute path to the new loom.
- */
 export async function setupTestLoom(name: string): Promise<string> {
     const loomPath = path.join(TEST_ROOT, name);
     await fs.remove(loomPath);
@@ -43,9 +32,6 @@ export async function setupTestLoom(name: string): Promise<string> {
     return loomPath;
 }
 
-/**
- * Completely remove a test loom directory.
- */
 export async function cleanupTestLoom(loomPath: string): Promise<void> {
     const maxRetries = 5;
     const delayMs = 300;
@@ -53,22 +39,17 @@ export async function cleanupTestLoom(loomPath: string): Promise<void> {
     for (let i = 0; i < maxRetries; i++) {
         try {
             await fs.remove(loomPath);
-            return; // Success
+            return;
         } catch (e: any) {
             if ((e.code === 'EBUSY' || e.code === 'EPERM') && i < maxRetries - 1) {
-                // Wait and retry
                 await new Promise(resolve => setTimeout(resolve, delayMs * (i + 1)));
             } else {
-                // Last attempt or different error — rethrow
                 throw e;
             }
         }
     }
 }
 
-/**
- * Create a minimal valid design document in a thread.
- */
 export async function createDesignDoc(
     threadPath: string,
     threadId: string,
@@ -93,16 +74,13 @@ export async function createDesignDoc(
     };
 
     const content = `## Goal\n\nTest design for ${threadId}.\n\n## Context\n\nTest context.\n`;
-    const output = `---\n${Object.entries(frontmatter)
-        .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
-        .join('\n')}\n---\n\n${content}`;
+    
+    const yamlLines = Object.entries(frontmatter).map(([k, v]) => `${k}: ${JSON.stringify(v)}`);
+    const output = `---\n${yamlLines.join('\n')}\n---\n\n${content}`;
 
-    await fs.writeFile(designPath, output);
+    await fs.outputFile(designPath, output);
 }
 
-/**
- * Assert that a file contains a specific string.
- */
 export function assertFileContains(filePath: string, expected: string): void {
     const content = fs.readFileSync(filePath, 'utf8');
     if (!content.includes(expected)) {
@@ -110,9 +88,6 @@ export function assertFileContains(filePath: string, expected: string): void {
     }
 }
 
-/**
- * Assert that a condition is true.
- */
 export function assert(condition: boolean, message?: string): void {
     if (!condition) {
         throw new Error(message || 'Assertion failed');

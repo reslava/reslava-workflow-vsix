@@ -1,21 +1,8 @@
-export type IdeaStatus =
-    | 'draft'
-    | 'active'
-    | 'done'
-    | 'cancelled';
+import { BaseDoc } from './base';
 
-export interface IdeaDoc {
+export type IdeaStatus = 'draft' | 'active' | 'done' | 'cancelled';
+
+export interface IdeaDoc extends BaseDoc<IdeaStatus> {
     type: 'idea';
-    id: string;
-    title: string;
     status: IdeaStatus;
-    created: string;
-    updated?: string;
-    version: number;
-    tags: string[];
-    parent_id: string | null;
-    child_ids: string[];
-    requires_load: string[];
-    content: string;
-    _path?: string;
 }

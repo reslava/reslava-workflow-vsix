@@ -1,7 +1,8 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
+import * as fsNative from 'fs';
 import * as os from 'os';
-import { runLoom, assert, createDesignDoc } from './test-utils';
+import { runLoom, assert, createDesignDoc } from './test-utils.ts';
 
 async function testIdManagement() {
     console.log('🧵 Running ID management tests...\n');
@@ -36,10 +37,10 @@ async function testIdManagement() {
     console.log(`    ✅ Finalized to: ${permanentId}`);
     
     const permPath = path.join(threadPath, `${permanentId}.md`);
-    assert(fs.existsSync(permPath), `Permanent file not created at ${permPath}`);
+    assert(fsNative.existsSync(permPath), `Permanent file not created at ${permPath}`);
     
     const oldPath = path.join(threadPath, `${tempId}.md`);
-    assert(!fs.existsSync(oldPath), 'Temporary file not removed');
+    assert(!fsNative.existsSync(oldPath), 'Temporary file not removed');
     console.log(`    ✅ Permanent file created`);
 
     // 3. Test rename command
@@ -50,12 +51,12 @@ async function testIdManagement() {
     await createDesignDoc(threadPath, 'reference-test', { role: 'primary', status: 'active' });
     
     // Manually update the design to reference the idea in its child_ids
-    const designContent = await fs.readFile(designPath, 'utf8');
+    const designContent = fsNative.readFileSync(designPath, 'utf8');
     const updatedContent = designContent.replace(
         'child_ids: []',
         `child_ids: [${permanentId}]`
     );
-    await fs.writeFile(designPath, updatedContent);
+    await fs.outputFile(designPath, updatedContent);
     
     // Rename the idea
     result = runLoom(`rename ${permanentId} "Renamed Title"`);
@@ -69,7 +70,7 @@ async function testIdManagement() {
     assert(result.stdout.includes('Updated 1 reference'), 'Reference count mismatch');
     
     // Verify the referencing document was updated
-    const updatedDesign = await fs.readFile(designPath, 'utf8');
+    const updatedDesign = fsNative.readFileSync(designPath, 'utf8');
     assert(updatedDesign.includes(`child_ids: [${renamedId}]`), 'Reference not updated in design');
     console.log('    ✅ Rename updated references correctly');
 

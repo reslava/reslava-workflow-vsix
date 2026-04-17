@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { setupTestLoom, cleanupTestLoom, runLoom, assert } from './test-utils';
+import { setupTestLoom, cleanupTestLoom, runLoom, assert } from './test-utils.ts';
 
 async function testMultiLoom() {
     console.log('🧵 Running multi‑loom tests...\n');

@@ -1,10 +1,6 @@
-export type PlanStatus =
-    | 'draft'
-    | 'active'
-    | 'implementing'
-    | 'blocked'
-    | 'done'
-    | 'cancelled';
+import { BaseDoc } from './base';
+
+export type PlanStatus = 'draft' | 'active' | 'implementing' | 'done' | 'blocked' | 'cancelled';
 
 export interface PlanStep {
     order: number;
@@ -14,22 +10,11 @@ export interface PlanStep {
     blockedBy: string[];
 }
 
-export interface PlanDoc {
+export interface PlanDoc extends BaseDoc<PlanStatus> {
     type: 'plan';
-    id: string;
-    title: string;
     status: PlanStatus;
-    created: string;
-    updated?: string;
-    version: number;
     design_version: number;
-    tags: string[];
-    parent_id: string;
-    child_ids: string[];
-    requires_load: string[];
     target_version: string;
     staled?: boolean;
     steps: PlanStep[];
-    content: string;
-    _path?: string;
 }

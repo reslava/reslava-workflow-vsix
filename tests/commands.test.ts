@@ -1,7 +1,8 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
+import * as fsNative from 'fs';
 import * as os from 'os';
-import { runLoom, assert, createDesignDoc } from './test-utils';
+import { runLoom, assert, createDesignDoc } from './test-utils.ts';
 
 async function testCommands() {
     console.log('🧵 Running CLI commands tests...\n');
@@ -38,8 +39,8 @@ async function testCommands() {
     result = runLoom('summarise-context example');
     assert(result.exitCode === 0, `summarise-context failed: ${result.stderr}`);
     const ctxPath = path.join(threadPath, 'example-ctx.md');
-    assert(fs.existsSync(ctxPath), 'Context summary not created');
-    const ctxContent = fs.readFileSync(ctxPath, 'utf8');
+    assert(fsNative.existsSync(ctxPath), 'Context summary not created');
+    const ctxContent = fsNative.readFileSync(ctxPath, 'utf8');
     assert(ctxContent.includes('tags: [ctx, summary]'), 'Inline arrays not used');
     console.log('    ✅ loom summarise-context works');
 
@@ -71,7 +72,7 @@ Test plan.
 | 🔳 | 1 | First step | src/ | — |
 | 🔳 | 2 | Second step | src/ | Step 1 |
 `;
-    await fs.writeFile(planPath, planContent);
+    await fs.outputFile(planPath, planContent);
     console.log('    ✅ Test plan created');
 
     // Test start-plan

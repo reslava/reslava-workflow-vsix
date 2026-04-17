@@ -1,4 +1,9 @@
 // ============================================================================
+// Base Document
+// ============================================================================
+export { BaseDoc, DocumentType } from './entities/base';
+
+// ============================================================================
 // Entities
 // ============================================================================
 export { IdeaDoc, IdeaStatus } from './entities/idea';
@@ -35,4 +40,4 @@ export { createEmptyIndex, LinkIndex, DocumentEntry, StepBlocker } from './linkI
 // ============================================================================
 // Types (Shared)
 // ============================================================================
-export { DocumentType, Document, DocumentStatus, WorkflowEvent, DiagnosticEvent, ThreadStatus, ThreadPhase } from './types';
+export { Document, DocumentStatus, WorkflowEvent, DiagnosticEvent, ThreadStatus, ThreadPhase } from './types';
