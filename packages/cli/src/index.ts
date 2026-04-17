@@ -11,9 +11,10 @@ import { refineCommand } from './commands/refine';
 import { startPlanCommand } from './commands/startPlan';
 import { completeStepCommand } from './commands/completeStep';
 import { summariseCommand } from './commands/summarise';
-import { weaveIdeaCommand } from './commands/weave';
 import { finalizeCommand } from './commands/finalize';
 import { renameCommand } from './commands/rename';
+import { weaveIdeaCommand } from './commands/weave';
+import { weaveDesignCommand } from './commands/weaveDesign';
 
 const program = new Command();
 
@@ -88,15 +89,6 @@ program
   .option('--force', 'Overwrite existing summary even if fresh')
   .action(summariseCommand);
   
-program
-    .command('weave')
-    .description('Weave a new document')
-    .command('idea <title>')
-    .description('Create a new idea document')
-    .option('--thread <name>', 'Place the idea in a specific thread folder')
-    .action((title, options) => {
-        weaveIdeaCommand(title, options);
-    });
 
 program
     .command('finalize <temp-id>')
@@ -106,6 +98,22 @@ program
 program
     .command('rename <old-id> <new-title>')
     .description('Rename a finalized document and update all references')
-    .action(renameCommand);    
+    .action(renameCommand); 
+
+const weaveCmd = program
+    .command('weave')
+    .description('Weave a new document');
+
+weaveCmd
+    .command('idea <title>')
+    .description('Create a new idea document')
+    .option('--thread <name>', 'Place the idea in a specific thread folder')
+    .action((title, options) => weaveIdeaCommand(title, options));
+
+weaveCmd
+    .command('design <thread-id>')
+    .description('Create a new design document from an existing idea')
+    .option('--title <title>', 'Custom title for the design')
+    .action((threadId, options) => weaveDesignCommand(threadId, options));
 
 program.parse(process.argv);

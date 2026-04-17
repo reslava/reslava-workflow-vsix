@@ -1,7 +1,9 @@
-import { createBaseFrontmatter, serializeFrontmatter, generateTempId, toKebabCaseId } from '../../core/dist';
-import { getActiveLoomRoot } from '../../fs/dist';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import { getActiveLoomRoot } from '../../fs/dist';
+import { generateTempId, toKebabCaseId } from '../../core/dist';
+import { createBaseFrontmatter, serializeFrontmatter } from '../../core/dist';
+import { generateIdeaBody } from '../../core/dist';
 
 export interface WeaveIdeaInput {
     title: string;
@@ -26,30 +28,13 @@ export async function weaveIdea(
 
     const tempId = generateTempId('idea');
     const frontmatter = createBaseFrontmatter('idea', tempId, input.title);
-
-    const content = `# ${input.title}
-
-## Problem
-<!-- What pain or gap does this idea address? -->
-
-## Idea
-<!-- The core concept in 2-3 sentences. -->
-
-## Why now
-<!-- What makes this worth pursuing at this point? -->
-
-## Open questions
-<!-- What needs to be answered before committing to a design? -->
-
-## Next step
-<!-- design | spike | discard -->
-`;
+    const content = generateIdeaBody(input.title);
 
     const frontmatterYaml = serializeFrontmatter(frontmatter);
     const output = `${frontmatterYaml}\n${content}`;
     const filePath = path.join(threadPath, `${tempId}.md`);
 
-    await deps.fs.writeFile(filePath, output);
+    await deps.fs.outputFile(filePath, output);
 
     return { tempId, filePath };
 }

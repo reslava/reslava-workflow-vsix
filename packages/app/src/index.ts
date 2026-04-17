@@ -8,4 +8,5 @@ export { runEvent, RunEventDeps } from './runEvent';
 export { status, StatusInput, StatusDeps, ThreadStatusResult } from './status';
 export { summarise, SummariseInput, SummariseDeps } from './summarise';
 export { validate, ValidateInput, ValidateDeps, ValidationResult } from './validate';
-export { weaveIdea, WeaveIdeaInput, WeaveIdeaDeps } from './weave';
+export { weaveIdea, WeaveIdeaInput, WeaveIdeaDeps } from './weaveIdea';
+export { weaveDesign, WeaveDesignInput, WeaveDesignDeps } from './weaveDesign';

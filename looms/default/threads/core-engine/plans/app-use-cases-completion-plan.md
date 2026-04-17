@@ -32,8 +32,8 @@ Move all remaining orchestration logic out of the CLI layer into dedicated `app`
 
 | Done | # | Step | Files touched | Blocked by |
 |---|---|---|---|---|
-| 🔳 | 1 | Extract `weaveIdea` use‑case from CLI | `app/src/weaveIdea.ts`, `cli/src/commands/weave.ts` | — |
-| 🔳 | 2 | Implement `weaveDesign` use‑case | `app/src/weaveDesign.ts` | Step 1 |
+| ✅ | 1 | Extract `weaveIdea` use‑case from CLI | `app/src/weaveIdea.ts`, `cli/src/commands/weave.ts` | — |
+| ✅ | 2 | Implement `weaveDesign` use‑case | `app/src/weaveDesign.ts` | Step 1 |
 | 🔳 | 3 | Implement `weavePlan` use‑case | `app/src/weavePlan.ts` | Step 1 |
 | 🔳 | 4 | Add `weave design` and `weave plan` CLI commands | `cli/src/commands/weaveDesign.ts`, `cli/src/commands/weavePlan.ts`, `cli/src/index.ts` | Steps 2, 3 |
 | 🔳 | 5 | Refactor remaining CLI commands to use `app` layer exclusively | `cli/src/commands/*.ts` | Step 1 |
@@ -117,61 +117,23 @@ export async function weaveIdeaCommand(title: string, options: { thread?: string
 
 ---
 
-## Step 2 — Implement `weaveDesign` Use‑Case
+## Step 2 — Implement `weaveDesign` Use‑Case (with Auto‑Finalize)
 
-Create the use‑case for generating a design document from an existing idea.
+Create the use‑case for generating a design document from an existing idea. If the idea is not yet finalized (has a temporary ID), it is **automatically finalized** before the design is created. This eliminates friction in the happy path.
 
 **File:** `app/src/weaveDesign.ts`
 
-```typescript
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import { getActiveLoomRoot } from '../../fs/dist';
-import { loadThread } from '../../fs/dist';
-import { generatePermanentId } from '../../core/dist';
-import { createBaseFrontmatter, serializeFrontmatter } from '../../core/dist';
-import { generateDesignBody } from '../../core/dist';
+**Key additions:**
+- `findIdeaFile()` locates any idea document (temporary or finalized) in the thread.
+- If the idea ID starts with `new-`, the use‑case calls `finalizeIdea()` (inline or via `finalize` use‑case) to generate a permanent ID and update the idea's status to `active`.
+- After auto‑finalization, the design is created with `parent_id` pointing to the finalized idea.
 
-export interface WeaveDesignInput {
-    threadId: string;
-    title?: string;
-}
-
-export interface WeaveDesignDeps {
-    getActiveLoomRoot: typeof getActiveLoomRoot;
-    loadThread: typeof loadThread;
-    fs: typeof fs;
-}
-
-export async function weaveDesign(
-    input: WeaveDesignInput,
-    deps: WeaveDesignDeps
-): Promise<{ id: string; filePath: string }> {
-    const loomRoot = deps.getActiveLoomRoot();
-    const thread = await deps.loadThread(input.threadId);
-    
-    // Use existing idea title or provided title
-    const designTitle = input.title || thread.idea?.title || `${input.threadId} Design`;
-    
-    const existingIds = new Set(thread.allDocs.map(d => d.id));
-    const permanentId = generatePermanentId(designTitle, 'design', existingIds);
-    
-    const frontmatter = createBaseFrontmatter('design', permanentId, designTitle, thread.idea?.id || null);
-    (frontmatter as any).role = 'primary';
-    
-    const content = generateDesignBody(designTitle, 'User');
-    
-    const frontmatterYaml = serializeFrontmatter(frontmatter);
-    const output = `${frontmatterYaml}\n${content}`;
-    
-    const threadPath = path.join(loomRoot, 'threads', input.threadId);
-    const filePath = path.join(threadPath, `${permanentId}.md`);
-    
-    await deps.fs.outputFile(filePath, output);
-    
-    return { id: permanentId, filePath };
-}
-```
+**Behavior:**
+| Scenario | Result |
+| :--- | :--- |
+| Thread has finalized idea | Creates design linked to that idea. |
+| Thread has temporary idea only | Auto‑finalizes idea, then creates design. |
+| No idea in thread | Throws error: "No idea found." |
 
 ---
 
