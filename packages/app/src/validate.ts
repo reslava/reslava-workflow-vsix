@@ -1,7 +1,5 @@
-import { loadDoc, getActiveLoomRoot } from '../../fs/dist';
-import { buildLinkIndex } from '../../fs/dist';
-import { LinkIndex } from '../../core/dist/linkIndex';
-import { Document, DesignDoc, PlanDoc } from '../../core/dist/types';
+import { Document, DesignDoc, PlanDoc, LinkIndex } from '../../core/dist';
+import { loadDoc, getActiveLoomRoot, buildLinkIndex } from '../../fs/dist';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 

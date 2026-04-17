@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { weaveIdea } from '../../../app/dist/weave';
+import { weaveIdea } from '../../../app/dist';
 import { getActiveLoomRoot } from '../../../fs/dist';
 import * as fs from 'fs-extra';
 

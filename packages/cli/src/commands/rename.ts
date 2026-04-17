@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { rename } from '../../../app/dist/rename';
+import { rename } from '../../../app/dist';
 import { loadDoc, saveDoc, getActiveLoomRoot, findDocumentById, gatherAllDocumentIds, findMarkdownFiles } from '../../../fs/dist';
 import * as fs from 'fs-extra';
 

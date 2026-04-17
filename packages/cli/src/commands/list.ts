@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import * as fs from 'fs-extra';
-import { ConfigRegistry } from '../../../core/dist/registry';
+import { ConfigRegistry } from '../../../core/dist/';
 
 export async function listCommand(): Promise<void> {
   const registry = new ConfigRegistry();

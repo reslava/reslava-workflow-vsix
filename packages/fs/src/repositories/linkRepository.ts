@@ -2,8 +2,7 @@ import * as path from 'path';
 import { loadDoc } from '../serializers/frontmatterLoader';
 import { getActiveLoomRoot } from '../utils/workspaceUtils';
 import { findMarkdownFiles } from '../utils/pathUtils';
-import { LinkIndex, createEmptyIndex, DocumentEntry, StepBlocker } from '../../../core/dist/linkIndex';
-import { Document, PlanDoc } from '../../../core/dist/types';
+import { LinkIndex, createEmptyIndex, DocumentEntry, StepBlocker, Document, PlanDoc } from '../../../core/dist';
 
 export async function buildLinkIndex(): Promise<LinkIndex> {
   const loomRoot = getActiveLoomRoot();

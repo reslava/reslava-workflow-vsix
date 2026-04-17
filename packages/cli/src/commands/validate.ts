@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { validate } from '../../../app/dist/validate';
+import { validate } from '../../../app/dist';
 import { getActiveLoomRoot, buildLinkIndex, loadDoc } from '../../../fs/dist';
 import * as fs from 'fs-extra';
 

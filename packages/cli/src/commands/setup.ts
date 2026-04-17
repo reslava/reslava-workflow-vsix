@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as os from 'os';
 import chalk from 'chalk';
-import { ConfigRegistry } from '../../../core/dist/registry';
+import { ConfigRegistry } from '../../../core/dist';
 
 export async function setupCommand(name: string, options: { path?: string; switch?: boolean }): Promise<void> {
   const loomPath = options.path || path.join(os.homedir(), 'looms', name);

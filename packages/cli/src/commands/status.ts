@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { status } from '../../../app/dist/status';
+import { status } from '../../../app/dist';
 import { getActiveLoomRoot, loadThread, buildLinkIndex } from '../../../fs/dist';
 import * as fs from 'fs-extra';
 

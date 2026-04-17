@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { runEvent } from '../../../app/dist/runEvent';
+import { runEvent } from '../../../app/dist';
 import { loadThread as loadThreadFs, saveThread } from '../../../fs/dist';
 
 // Helper to bind dependencies for runEvent

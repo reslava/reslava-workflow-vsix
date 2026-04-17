@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { finalize } from '../../../app/dist/finalize';
+import { finalize } from '../../../app/dist';
 import { loadDoc, saveDoc, getActiveLoomRoot, findDocumentById, gatherAllDocumentIds } from '../../../fs/dist';
 import * as fs from 'fs-extra';
 

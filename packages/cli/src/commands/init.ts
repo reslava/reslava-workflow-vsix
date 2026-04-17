@@ -3,7 +3,7 @@ import * as fs from 'fs-extra';
 import * as os from 'os';
 import chalk from 'chalk';
 // Relative import to core
-import { ConfigRegistry } from '../../../core/dist/registry';
+import { ConfigRegistry } from '../../../core/dist';
 
 export async function initCommand(options: { force?: boolean }): Promise<void> {
   const defaultPath = path.join(os.homedir(), 'looms', 'default');

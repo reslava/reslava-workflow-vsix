@@ -1,7 +1,6 @@
 import matter from 'gray-matter';
 import * as fs from 'fs-extra';
-import { Document } from '../../../core/dist/types';
-import { parseStepsTable } from '../../../core/dist/planTableUtils';
+import { Document, parseStepsTable } from '../../../core/dist';
 
 export class FrontmatterParseError extends Error {
   constructor(

@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import { Thread, Document, DesignDoc } from '../../../core/dist/types';
+import { Thread, Document, DesignDoc } from '../../../core/dist';
 import { loadDoc, FrontmatterParseError } from '../serializers/frontmatterLoader';
 import { saveDoc } from '../serializers/frontmatterSaver';
 import { resolveThreadPath } from '../utils/workspaceUtils';

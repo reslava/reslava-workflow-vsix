@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { summarise } from '../../../app/dist/summarise';
+import { summarise } from '../../../app/dist';
 import { loadThread, getActiveLoomRoot } from '../../../fs/dist';
 import * as fs from 'fs-extra';
 

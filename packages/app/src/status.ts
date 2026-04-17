@@ -1,7 +1,5 @@
 import { getActiveLoomRoot, loadThread, buildLinkIndex } from '../../fs/dist';
-import { getThreadStatus, getThreadPhase } from '../../core/dist/derived';
-import { LinkIndex } from '../../core/dist/linkIndex';
-import { PlanDoc } from '../../core/dist/entities/plan';
+import { getThreadStatus, getThreadPhase, LinkIndex, PlanDoc } from '../../core/dist';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 

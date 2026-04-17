@@ -1,5 +1,4 @@
-import { generatePermanentId } from '../../core/dist/idUtils';
-import { Document } from '../../core/dist/types';
+import { generatePermanentId, Document } from '../../core/dist';
 import { loadDoc, saveDoc, getActiveLoomRoot, findDocumentById, gatherAllDocumentIds } from '../../fs/dist';
 import * as fs from 'fs-extra';
 import * as path from 'path';

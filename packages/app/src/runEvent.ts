@@ -1,7 +1,5 @@
 import { loadThread, saveThread } from '../../fs/dist';
-import { applyEvent } from '../../core/dist/applyEvent';
-import { WorkflowEvent } from '../../core/dist/types';
-import { Thread } from '../../core/dist/types';
+import { applyEvent, WorkflowEvent, Thread } from '../../core/dist';
 
 export interface RunEventDeps {
     loadThread: typeof loadThread;
