@@ -4,7 +4,7 @@ id: vscode-extension-plan-005
 title: "Implement groupByThread — Thread‑Based Tree View"
 status: draft
 created: 2026-04-11
-updated: 2026-04-14
+updated: 2026-04-18
 version: 2
 design_version: 1
 tags: [vscode, tree, viewmodel, grouping, thread]
@@ -18,7 +18,7 @@ requires_load: [vscode-extension-design]
 | | |
 |---|---|
 | **Created** | 2026-04-11 |
-| **Updated** | 2026-04-14 |
+| **Updated** | 2026-04-18 |
 | **Status** | DRAFT |
 | **Design** | `vscode-extension-design.md` |
 | **Target version** | 0.5.0 |
@@ -27,7 +27,7 @@ requires_load: [vscode-extension-design]
 
 # Goal
 
-Implement `groupByThread` in the ViewModel to enable grouping documents by Thread. This transforms the tree from a flat/type‑based structure into a hierarchical, work‑centric view organized around primary designs and their related documents.
+Implement `groupByThread` in the ViewModel to enable grouping documents by Thread. This transforms the tree from a flat/type‑based structure into a hierarchical, work‑centric view organized around primary designs and their related documents. The implementation must use the existing `app/status` use‑case and the `LinkIndex` to resolve relationships efficiently.
 
 ---
 
@@ -35,11 +35,11 @@ Implement `groupByThread` in the ViewModel to enable grouping documents by Threa
 
 | Done | # | Step | Files touched | Blocked by |
 |---|---|---|---|---|
-| 🔳 | 1 | Create Thread builder utility | `packages/vscode/src/domain/threadBuilder.ts` | — |
-| 🔳 | 2 | Implement relationship resolution | `packages/vscode/src/domain/threadBuilder.ts` | Step 1 |
-| 🔳 | 3 | Build Thread collection from docs | `packages/vscode/src/domain/threadBuilder.ts` | Step 2 |
+| 🔳 | 1 | Create Thread builder utility using `app/status` and `LinkIndex` | `packages/vscode/src/domain/threadBuilder.ts` | — |
+| 🔳 | 2 | Implement relationship resolution via `LinkIndex` | `packages/vscode/src/domain/threadBuilder.ts` | Step 1 |
+| 🔳 | 3 | Build Thread collection from documents | `packages/vscode/src/domain/threadBuilder.ts` | Step 2 |
 | 🔳 | 4 | Integrate Thread builder into ViewModel | `packages/vscode/src/view/viewModel.ts` | Step 3 |
-| 🔳 | 5 | Implement groupByThread tree projection | `packages/vscode/src/view/viewModel.ts` | Step 4 |
+| 🔳 | 5 | Implement `groupByThread` tree projection | `packages/vscode/src/view/viewModel.ts` | Step 4 |
 | 🔳 | 6 | Handle orphan documents | `packages/vscode/src/view/viewModel.ts` | Step 5 |
 | 🔳 | 7 | Add basic sorting | `packages/vscode/src/view/viewModel.ts` | Step 5 |
 
@@ -49,25 +49,17 @@ Implement `groupByThread` in the ViewModel to enable grouping documents by Threa
 
 **File:** `packages/vscode/src/domain/threadBuilder.ts`
 
-Define the `Thread` interface and builder function.
-
 ```typescript
-import { Document, DesignDoc } from '../../../core/src/types';
+import { Thread } from '@loom/core';
+import { Document } from '@loom/core';
+import { LinkIndex } from '@loom/core';
 
-export interface Thread {
-  id: string;
-  design: DesignDoc;
-  plans: Document[];
-  ideas: Document[];
-  contexts: Document[];
-  supportingDesigns: Document[];
-  allDocs: Document[];
-}
-
-export function buildThreads(docs: Document[]): Thread[] {
-  // Implementation in Step 3
+export function buildThreads(docs: Document[], index: LinkIndex): Thread[] {
+    // Implementation in Step 3
 }
 ```
+
+The builder will use the `LinkIndex` to efficiently traverse `parent_id` relationships instead of scanning all documents repeatedly.
 
 ---
 
@@ -75,91 +67,71 @@ export function buildThreads(docs: Document[]): Thread[] {
 
 **File:** `packages/vscode/src/domain/threadBuilder.ts`
 
-Implement ancestry resolution to find the primary design root.
-
 ```typescript
 function resolvePrimaryDesign(
-  doc: Document,
-  docsById: Map<string, Document>
+    doc: Document,
+    index: LinkIndex
 ): DesignDoc | undefined {
-  const visited = new Set<string>();
-  let current: Document | undefined = doc;
+    const visited = new Set<string>();
+    let current: Document | undefined = doc;
 
-  while (current?.parent_id) {
-    if (visited.has(current.id)) return undefined; // cycle guard
-    visited.add(current.id);
+    while (current?.parent_id) {
+        if (visited.has(current.id)) return undefined; // cycle guard
+        visited.add(current.id);
 
-    const parent = docsById.get(current.parent_id);
-    if (!parent) return undefined;
+        const parentId = current.parent_id;
+        const parentEntry = index.documents.get(parentId);
+        if (!parentEntry) return undefined;
 
-    if (parent.type === 'design' && (parent as DesignDoc).role === 'primary') {
-      return parent as DesignDoc;
+        // We need the full document; for now, assume we can load it or it's cached
+        const parent = documentCache.get(parentId);
+        if (!parent) return undefined;
+
+        if (parent.type === 'design' && (parent as DesignDoc).role === 'primary') {
+            return parent as DesignDoc;
+        }
+
+        current = parent;
     }
 
-    current = parent;
-  }
-
-  return undefined;
+    return undefined;
 }
 ```
 
+**Note:** This step may require a `DocumentCache` that maps IDs to loaded documents. The `app/status` use‑case can provide the full thread data, so we may not need to re‑implement resolution here. Instead, we can rely on `app/status` to return fully resolved threads.
+
+**Simpler approach:** Use `app/status` with `verbose: true` to get structured thread data directly, avoiding manual resolution entirely.
+
 ---
 
-## Step 3 — Build Thread Collection from Docs
+## Step 3 — Build Thread Collection from Documents
 
 **File:** `packages/vscode/src/domain/threadBuilder.ts`
 
 ```typescript
-export function buildThreads(docs: Document[]): Thread[] {
-  const docsById = new Map(docs.map(d => [d.id, d]));
-  const threads: Record<string, Thread> = {};
+import { status } from '../../../../app/dist/status';
+import { getActiveLoomRoot, loadThread, buildLinkIndex } from '../../../../fs/dist';
+import * as fs from 'fs-extra';
 
-  // Initialize from primary designs
-  docs.forEach(doc => {
-    if (doc.type === 'design' && (doc as DesignDoc).role === 'primary') {
-      threads[doc.id] = {
-        id: doc.id,
-        design: doc as DesignDoc,
-        plans: [],
-        ideas: [],
-        contexts: [],
-        supportingDesigns: [],
-        allDocs: [doc],
-      };
+export async function buildThreads(): Promise<Thread[]> {
+    const index = await buildLinkIndex();
+    const result = await status(
+        { verbose: true },
+        { getActiveLoomRoot, loadThread, buildLinkIndex, fs }
+    );
+    // result.list contains thread summaries; we need full thread data
+    const threads: Thread[] = [];
+    if (result.list) {
+        for (const t of result.list) {
+            const thread = await loadThread(t.id);
+            threads.push(thread);
+        }
     }
-  });
-
-  // Assign other docs
-  docs.forEach(doc => {
-    if (doc.type === 'design' && (doc as DesignDoc).role === 'primary') return;
-
-    const primaryDesign = resolvePrimaryDesign(doc, docsById);
-    if (!primaryDesign) return;
-
-    const thread = threads[primaryDesign.id];
-    if (!thread) return;
-
-    thread.allDocs.push(doc);
-
-    switch (doc.type) {
-      case 'plan':
-        thread.plans.push(doc);
-        break;
-      case 'idea':
-        thread.ideas.push(doc);
-        break;
-      case 'ctx':
-        thread.contexts.push(doc);
-        break;
-      case 'design':
-        thread.supportingDesigns.push(doc);
-        break;
-    }
-  });
-
-  return Object.values(threads);
+    return threads;
 }
 ```
+
+This leverages the existing `app` layer and ensures consistency with the CLI.
 
 ---
 
@@ -167,56 +139,60 @@ export function buildThreads(docs: Document[]): Thread[] {
 
 **File:** `packages/vscode/src/view/viewModel.ts`
 
-Modify the constructor to accept documents and build threads internally.
-
 ```typescript
+import { Thread } from '@loom/core';
 import { buildThreads } from '../domain/threadBuilder';
 
 export class LoomViewModel {
-  private threads: Thread[];
-  private orphanDocs: Document[];
+    private threads: Thread[] = [];
+    private orphanDocs: Document[] = [];
 
-  constructor(docs: Document[]) {
-    const allThreads = buildThreads(docs);
-    const assignedIds = new Set(allThreads.flatMap(t => t.allDocs.map(d => d.id)));
-    this.orphanDocs = docs.filter(d => !assignedIds.has(d.id));
-    this.threads = allThreads;
-  }
+    async refresh(): Promise<void> {
+        this.threads = await buildThreads();
+        // Orphan detection handled in Step 6
+    }
 
-  // ... rest of class
+    // ... rest of class
 }
 ```
 
 ---
 
-## Step 5 — Implement groupByThread Tree Projection
+## Step 5 — Implement `groupByThread` Tree Projection
 
 **File:** `packages/vscode/src/view/viewModel.ts`
 
 ```typescript
-private groupByThread(docs: Document[], state: ViewState): TreeNode[] {
-  const nodes: TreeNode[] = [];
+private groupByThread(): TreeNode[] {
+    const nodes: TreeNode[] = [];
 
-  for (const thread of this.threads) {
-    const threadDocs = docs.filter(d => thread.allDocs.includes(d));
-    if (threadDocs.length === 0) continue;
+    for (const thread of this.threads) {
+        nodes.push({
+            type: 'group',
+            label: `🧵 ${thread.id}`,
+            collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
+            threadId: thread.id,
+            children: [
+                this.createSection('Primary Design', [thread.design]),
+                this.createSection('Supporting Designs', thread.supportingDesigns),
+                this.createSection('Plans', thread.plans),
+                this.createSection('Ideas', thread.idea ? [thread.idea] : []),
+                this.createSection('Contexts', thread.contexts),
+            ].filter(Boolean) as TreeNode[],
+        });
+    }
 
-    nodes.push({
-      type: 'group',
-      label: `🧵 ${thread.id}`,
-      collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
-      threadId: thread.id,
-      children: [
-        this.createSection('Primary Design', [thread.design]),
-        this.createSection('Supporting Designs', thread.supportingDesigns.filter(d => threadDocs.includes(d))),
-        this.createSection('Plans', thread.plans.filter(p => threadDocs.includes(p))),
-        this.createSection('Ideas', thread.ideas.filter(i => threadDocs.includes(i))),
-        this.createSection('Contexts', thread.contexts.filter(c => threadDocs.includes(c))),
-      ].filter(Boolean) as TreeNode[],
-    });
-  }
+    return nodes;
+}
 
-  return nodes;
+private createSection(label: string, docs: Document[]): TreeNode | undefined {
+    if (!docs.length) return undefined;
+    return {
+        type: 'group',
+        label,
+        collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+        children: docs.map(d => this.createDocNode(d)),
+    };
 }
 ```
 
@@ -226,24 +202,30 @@ private groupByThread(docs: Document[], state: ViewState): TreeNode[] {
 
 **File:** `packages/vscode/src/view/viewModel.ts`
 
-Add orphan docs as an "Unassigned" group.
-
 ```typescript
-private groupByThread(docs: Document[], state: ViewState): TreeNode[] {
-  const nodes: TreeNode[] = [];
-  // ... thread nodes ...
+private groupByThread(): TreeNode[] {
+    const nodes: TreeNode[] = [];
+    const assignedIds = new Set<string>();
 
-  const orphanDocsInView = docs.filter(d => this.orphanDocs.includes(d));
-  if (orphanDocsInView.length > 0) {
-    nodes.push({
-      type: 'group',
-      label: 'Unassigned',
-      collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
-      children: orphanDocsInView.map(d => this.createDocNode(d)),
-    });
-  }
+    for (const thread of this.threads) {
+        thread.allDocs.forEach(d => assignedIds.add(d.id));
+        // ... create thread node
+    }
 
-  return nodes;
+    // Find orphan docs
+    const allDocs = await this.getAllDocuments(); // from fs layer
+    const orphans = allDocs.filter(d => !assignedIds.has(d.id));
+
+    if (orphans.length) {
+        nodes.push({
+            type: 'group',
+            label: 'Unassigned',
+            collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+            children: orphans.map(d => this.createDocNode(d)),
+        });
+    }
+
+    return nodes;
 }
 ```
 
@@ -253,15 +235,13 @@ private groupByThread(docs: Document[], state: ViewState): TreeNode[] {
 
 **File:** `packages/vscode/src/view/viewModel.ts`
 
-Sort threads alphabetically and documents within sections.
-
 ```typescript
 private sortThreads(threads: Thread[]): Thread[] {
-  return threads.sort((a, b) => a.id.localeCompare(b.id));
+    return threads.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 private sortDocs(docs: Document[]): Document[] {
-  return docs.sort((a, b) => (a.title || a.id).localeCompare(b.title || b.id));
+    return docs.sort((a, b) => (a.title || a.id).localeCompare(b.title || b.id));
 }
 ```
 
