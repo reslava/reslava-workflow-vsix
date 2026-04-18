@@ -2,6 +2,11 @@ import { IdeaDoc } from './idea';
 import { DesignDoc } from './design';
 import { PlanDoc } from './plan';
 import { CtxDoc } from './ctx';
+import { Document } from '../types';
+
+export type ThreadStatus = 'CANCELLED' | 'IMPLEMENTING' | 'ACTIVE' | 'DONE';
+
+export type ThreadPhase = 'ideating' | 'designing' | 'planning' | 'implementing';
 
 export interface Thread {
     id: string;
@@ -12,6 +17,3 @@ export interface Thread {
     contexts: CtxDoc[];
     allDocs: Document[];
 }
-
-// Re‑export Document type to avoid circular dependencies
-import { Document } from '../types';

@@ -2,10 +2,11 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { getActiveLoomRoot } from '../../fs/dist';
 import { saveDoc } from '../../fs/dist';
+import { loadDoc } from '../../fs/dist';
 import { generatePermanentId } from '../../core/dist';
 import { createBaseFrontmatter } from '../../core/dist';
 import { generateDesignBody } from '../../core/dist';
-import { DesignDoc } from '../../core/dist';
+import { DesignDoc, IdeaDoc } from '../../core/dist';
 
 export interface WeaveDesignInput {
     threadId: string;
@@ -15,6 +16,7 @@ export interface WeaveDesignInput {
 export interface WeaveDesignDeps {
     getActiveLoomRoot: typeof getActiveLoomRoot;
     saveDoc: typeof saveDoc;
+    loadDoc: typeof loadDoc;
     fs: typeof fs;
 }
 
@@ -52,13 +54,19 @@ async function findIdeaFile(threadPath: string, deps: WeaveDesignDeps): Promise<
 }
 
 /**
- * Finalizes a temporary idea in-place and returns the new permanent ID and title.
+ * Finalizes a temporary idea using loadDoc/saveDoc.
  */
 async function finalizeIdea(
-    idea: IdeaInfo,
+    ideaPath: string,
     threadPath: string,
     deps: WeaveDesignDeps
 ): Promise<{ newId: string; title: string }> {
+    const idea = await deps.loadDoc(ideaPath) as IdeaDoc;
+    
+    if (!idea.id.startsWith('new-')) {
+        return { newId: idea.id, title: idea.title };
+    }
+    
     const existingIds = new Set<string>();
     const entries = await deps.fs.readdir(threadPath);
     for (const entry of entries) {
@@ -69,20 +77,17 @@ async function finalizeIdea(
     existingIds.delete(idea.id);
     
     const permanentId = generatePermanentId(idea.title, 'idea', existingIds);
-    const updated = new Date().toISOString().split('T')[0];
     
-    let newContent = idea.content
-        .replace(/^id:\s*["']?.+?["']?\s*$/m, `id: ${permanentId}`)
-        .replace(/^status:\s*["']?.+?["']?\s*$/m, `status: active`)
-        .replace(/^updated:\s*["']?.+?["']?\s*$/m, `updated: ${updated}`);
-    
-    if (!newContent.includes('updated:')) {
-        newContent = newContent.replace(/^(created:.*)$/m, `$1\nupdated: ${updated}`);
-    }
+    const updatedIdea: IdeaDoc = {
+        ...idea,
+        id: permanentId,
+        status: 'active',
+        updated: new Date().toISOString().split('T')[0],
+    };
     
     const newPath = path.join(threadPath, `${permanentId}.md`);
-    await deps.fs.writeFile(newPath, newContent);
-    await deps.fs.remove(idea.filePath);
+    await deps.saveDoc(updatedIdea, newPath);
+    await deps.fs.remove(ideaPath);
     
     return { newId: permanentId, title: idea.title };
 }
@@ -90,10 +95,6 @@ async function finalizeIdea(
 /**
  * Creates a new design document from an existing idea.
  * If the idea is not yet finalized, it is automatically finalized first.
- *
- * @param input - The thread ID and optional custom title.
- * @param deps - Filesystem and document saving dependencies.
- * @returns A promise resolving to the design ID, file path, and auto‑finalize flag.
  */
 export async function weaveDesign(
     input: WeaveDesignInput,
@@ -114,7 +115,7 @@ export async function weaveDesign(
     let autoFinalized = false;
     
     if (ideaId.startsWith('new-')) {
-        const finalized = await finalizeIdea(idea, threadPath, deps);
+        const finalized = await finalizeIdea(idea.filePath, threadPath, deps);
         ideaId = finalized.newId;
         ideaTitle = finalized.title;
         autoFinalized = true;

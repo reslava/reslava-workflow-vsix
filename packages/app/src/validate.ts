@@ -1,5 +1,14 @@
-import { Document, DesignDoc, PlanDoc, LinkIndex } from '../../core/dist';
-import { loadDoc, getActiveLoomRoot, buildLinkIndex } from '../../fs/dist';
+import { getActiveLoomRoot } from '../../fs/dist';
+import { buildLinkIndex } from '../../fs/dist';
+import { loadDoc } from '../../fs/dist';
+import { LinkIndex } from '../../core/dist/linkIndex';
+import { Document, DesignDoc, PlanDoc } from '../../core/dist/types';
+import {
+    validateParentExists,
+    getDanglingChildIds,
+    validateDesignRole,
+    validateStepBlockers
+} from '../../core/dist/validation';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
@@ -19,57 +28,6 @@ export interface ValidateDeps {
 export interface ValidationResult {
     id: string;
     issues: string[];
-}
-
-// Inline validation helpers
-function validateParentExists(doc: Document, index: LinkIndex): boolean {
-    if (!doc.parent_id) return true;
-    return index.documents.has(doc.parent_id);
-}
-
-function getDanglingChildIds(doc: Document, index: LinkIndex): string[] {
-    if (!doc.child_ids) return [];
-    return doc.child_ids.filter(id => !index.documents.has(id));
-}
-
-function validateDesignRole(doc: DesignDoc): string | null {
-    if (!doc.role) {
-        return 'Design missing role field (should be "primary" or "supporting")';
-    }
-    if (doc.role !== 'primary' && doc.role !== 'supporting') {
-        return `Invalid role "${doc.role}" (must be "primary" or "supporting")`;
-    }
-    return null;
-}
-
-function validateStepBlockers(plan: PlanDoc, index: LinkIndex): string[] {
-    const issues: string[] = [];
-    if (!plan.steps) return issues;
-    
-    for (const step of plan.steps) {
-        if (!step.blockedBy) continue;
-        
-        for (const blocker of step.blockedBy) {
-            if (blocker.startsWith('Step ')) {
-                const stepNum = parseInt(blocker.replace('Step ', ''), 10);
-                if (isNaN(stepNum) || stepNum < 1 || stepNum > plan.steps.length) {
-                    issues.push(`Step ${step.order}: invalid blocker "${blocker}"`);
-                }
-                continue;
-            }
-            
-            if (blocker.includes('-plan-')) {
-                if (!index.documents.has(blocker)) {
-                    issues.push(`Step ${step.order}: blocked by missing plan "${blocker}"`);
-                }
-                continue;
-            }
-            
-            issues.push(`Step ${step.order}: unknown blocker format "${blocker}"`);
-        }
-    }
-    
-    return issues;
 }
 
 async function findMarkdownFiles(dir: string): Promise<string[]> {
@@ -133,7 +91,7 @@ async function validateThread(
         if (doc.type === 'design') {
             const roleIssue = validateDesignRole(doc as DesignDoc);
             if (roleIssue) {
-                issues.push(roleIssue);
+                issues.push(roleIssue.message);
             }
         }
 
@@ -148,7 +106,7 @@ async function validateThread(
             }
 
             const blockerIssues = validateStepBlockers(plan, index);
-            issues.push(...blockerIssues);
+            issues.push(...blockerIssues.map(i => i.message));
         }
     }
 

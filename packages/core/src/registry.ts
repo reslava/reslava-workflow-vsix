@@ -79,13 +79,12 @@ export class ConfigRegistry {
   removeLoom(name: string): void {
     const index = this.registry.looms.findIndex(l => l.name === name);
     if (index === -1) {
-      throw new Error(`Loom '${name}' not found`);
+        throw new Error(`Loom '${name}' not found`);
     }
+    const removedLoom = this.registry.looms[index]; // Capture before splice
     this.registry.looms.splice(index, 1);
-    // If the removed loom was active, clear active_loom
-    const removedLoom = this.registry.looms[index];
-    if (this.registry.active_loom === removedLoom?.path) {
-      this.registry.active_loom = null;
+    if (this.registry.active_loom === removedLoom.path) {
+        this.registry.active_loom = null;
     }
     this.save();
   }
