@@ -35,7 +35,7 @@ Implement a fast, in‑memory index of all document relationships (`parent_id`, 
 |---|---|---|---|---|
 | ✅ | 1 | Define LinkIndex types and interfaces | `packages/core/src/linkIndex.ts` | — |
 | ✅ | 2 | Implement index builder (full scan) | `packages/fs/src/buildLinkIndex.ts` | Step 1 |
-| ✅ | 3 | Implement incremental update functions | `packages/fs/src/updateLinkIndex.ts` | Step 2 |
+| ⏳ | 3 | Implement incremental update functions | `packages/fs/src/updateLinkIndex.ts` | Step 2 |
 | ⏳ | 4 | Integrate index with VS Code extension | `packages/vscode/src/extension.ts`, `watcher.ts` | Step 3 |
 | ✅ | 5 | Use index in `loom validate` command | `packages/cli/src/commands/validate.ts` | Step 2 |
 | ✅ | 6 | Use index in `loom status` for blocker resolution | `packages/cli/src/commands/status.ts` | Step 2 |

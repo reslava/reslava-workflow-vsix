@@ -2,7 +2,7 @@
 type: design
 id: multi-workspace-mvp-design
 title: "Minimal Multi-Loom Workspace Support (MVP)"
-status: active
+status: done
 created: 2026-04-14
 updated: 2026-04-14
 version: 2

@@ -2,7 +2,7 @@
 type: plan
 id: multi-workspace-plan-001
 title: "Implement Minimal Multi-Loom Workspace Support"
-status: draft
+status: done
 created: 2026-04-14
 updated: 2026-04-14
 version: 2

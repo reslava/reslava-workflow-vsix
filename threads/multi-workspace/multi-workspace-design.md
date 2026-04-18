@@ -2,12 +2,12 @@
 type: design
 id: multi-workspace-design
 title: "Multi-Loom Workspaces & Thematic Vocabulary"
-status: active
+status: done
 created: 2026-04-14
 version: 1
 tags: [loom, workspace, ux, vocabulary, architecture, vision]
 parent_id: workflow-design-v2
-child_ids: [loom-multi-workspace-mvp-design]
+child_ids: [multi-workspace-mvp-design]
 requires_load: []
 role: primary
 ---
