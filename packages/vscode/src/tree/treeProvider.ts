@@ -9,6 +9,8 @@ import { Thread } from '@reslava-loom/core/dist/entities/thread';
 import { Document } from '@reslava-loom/core/dist/entities/document';
 import { PlanDoc } from '@reslava-loom/core/dist/entities/plan';
 import { getThreadStatus } from '@reslava-loom/core/dist/derived';
+import { ViewStateManager } from '../view/viewStateManager';
+import { GroupingMode } from '../view/viewState';
 
 export interface TreeNode extends vscode.TreeItem {
     children?: TreeNode[];
@@ -22,6 +24,8 @@ export class LoomTreeProvider implements vscode.TreeDataProvider<TreeNode> {
 
     private state: LoomState | null = null;
     private workspaceRoot: string | undefined;
+
+    constructor(private viewStateManager: ViewStateManager) {}
 
     setWorkspaceRoot(root: string | undefined): void {
         this.workspaceRoot = root;
@@ -67,11 +71,81 @@ export class LoomTreeProvider implements vscode.TreeDataProvider<TreeNode> {
                 return [this.messageNode('No threads found')];
             }
 
-            return this.state.threads.map(t => this.createThreadNode(t));
+            const viewState = this.viewStateManager.getState();
+            return this.groupThreads(this.state.threads, viewState.grouping);
         } catch (e: any) {
             console.error('🧵 Failed to load Loom state:', e);
             return [this.messageNode(`Error: ${e.message}`)];
         }
+    }
+
+    private groupThreads(threads: Thread[], grouping: GroupingMode): TreeNode[] {
+        switch (grouping) {
+            case 'type':
+                return this.groupByType(threads);
+            case 'status':
+                return this.groupByStatus(threads);
+            case 'release':
+                return this.groupByRelease(threads);
+            case 'thread':
+            default:
+                return threads.map(t => this.createThreadNode(t));
+        }
+    }
+
+    private groupByType(threads: Thread[]): TreeNode[] {
+        const groups: Record<string, Document[]> = {
+            idea: [],
+            design: [],
+            plan: [],
+            ctx: [],
+        };
+        for (const thread of threads) {
+            if (thread.idea) groups.idea.push(thread.idea);
+            groups.design.push(thread.design);
+            thread.supportingDesigns.forEach(d => groups.design.push(d));
+            thread.plans.forEach(p => groups.plan.push(p));
+            thread.contexts.forEach(c => groups.ctx.push(c));
+        }
+        return Object.entries(groups)
+            .filter(([, docs]) => docs.length > 0)
+            .map(([type, docs]) => this.createSectionNode(
+                type.charAt(0).toUpperCase() + type.slice(1) + 's',
+                docs.map(d => this.createDocumentNode(d, type))
+            ));
+    }
+
+    private groupByStatus(threads: Thread[]): TreeNode[] {
+        const groups: Record<string, Document[]> = {};
+        const allDocs: Document[] = [];
+        for (const thread of threads) {
+            if (thread.idea) allDocs.push(thread.idea);
+            allDocs.push(thread.design);
+            thread.supportingDesigns.forEach(d => allDocs.push(d));
+            thread.plans.forEach(p => allDocs.push(p));
+            thread.contexts.forEach(c => allDocs.push(c));
+        }
+        for (const doc of allDocs) {
+            if (!groups[doc.status]) groups[doc.status] = [];
+            groups[doc.status].push(doc);
+        }
+        return Object.entries(groups).map(([status, docs]) =>
+            this.createSectionNode(status, docs.map(d => this.createDocumentNode(d, d.type)))
+        );
+    }
+
+    private groupByRelease(threads: Thread[]): TreeNode[] {
+        const groups: Record<string, Document[]> = {};
+        for (const thread of threads) {
+            const release = (thread.design as any).target_release || 'unspecified';
+            if (!groups[release]) groups[release] = [];
+            groups[release].push(thread.design);
+            thread.plans.forEach(p => groups[release].push(p));
+        }
+        return Object.entries(groups).map(([release, docs]) =>
+            this.createSectionNode(release === 'unspecified' ? 'No Release' : `v${release}`,
+                docs.map(d => this.createDocumentNode(d, d.type)))
+        );
     }
 
     private messageNode(text: string): TreeNode {

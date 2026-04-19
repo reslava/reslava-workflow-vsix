@@ -35,11 +35,11 @@ Build a VS Code extension that provides a visual interface for Loom. The extensi
 
 | Done | # | Step | Files touched | Blocked by |
 |---|---|---|---|---|
-| 🔳 | 1 | Setup VSIX project structure | `packages/vscode/` | — |
-| 🔳 | 2 | Register extension activation and deactivation | `packages/vscode/src/extension.ts` | Step 1 |
-| 🔳 | 3 | Implement `LoomTreeProvider` using `app/status` | `packages/vscode/src/tree/treeProvider.ts` | Step 2 |
-| 🔳 | 4 | Register Tree View in `package.json` | `packages/vscode/package.json` | Step 3 |
-| 🔳 | 5 | Implement extension commands (delegating to `app` use‑cases) | `packages/vscode/src/commands/` | Step 3 |
+| ✅ | 1 | Setup VSIX project structure | `packages/vscode/` | — |
+| ✅ | 2 | Register extension activation and deactivation | `packages/vscode/src/extension.ts` | Step 1 |
+| ✅ | 3 | Implement `LoomTreeProvider` using `app/status` | `packages/vscode/src/tree/treeProvider.ts` | Step 2 |
+| ✅ | 4 | Register Tree View in `package.json` | `packages/vscode/package.json` | Step 3 |
+| 🔳 weaveIdea | 5 | Implement extension commands (delegating to `app` use‑cases) | `packages/vscode/src/commands/` | Step 3 |
 | 🔳 | 6 | Add file watcher with link index incremental updates | `packages/vscode/src/watcher.ts` | Step 5 |
 | 🔳 | 7 | Add diagnostics for broken links | `packages/vscode/src/diagnostics.ts` | Step 6 |
 | 🔳 | 8 | Test in VS Code Extension Host | — | All |

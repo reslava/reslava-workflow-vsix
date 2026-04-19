@@ -33,19 +33,14 @@
       ]
     },
     "commands": [
-      {
-        "command": "loom.refresh",
-        "title": "Loom: Refresh",
-        "icon": "$(refresh)"
-      }
+      { "command": "loom.refresh", "title": "Loom: Refresh", "icon": "$(refresh)" },
+      { "command": "loom.weaveIdea", "title": "Loom: Weave Idea", "category": "Loom" },
+      { "command": "loom.setGrouping", "title": "Loom: Set Grouping", "icon": "$(list-tree)" }
     ],
     "menus": {
       "view/title": [
-        {
-          "command": "loom.refresh",
-          "when": "view == loom.threads",
-          "group": "navigation"
-        }
+        { "command": "loom.setGrouping", "when": "view == loom.threads", "group": "navigation" },
+        { "command": "loom.refresh", "when": "view == loom.threads", "group": "navigation" }
       ]
     }
   },

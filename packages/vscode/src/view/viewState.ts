@@ -1,0 +1,16 @@
+export type GroupingMode = 'type' | 'thread' | 'status' | 'release';
+
+export interface ViewState {
+    grouping: GroupingMode;
+    textFilter?: string;
+    statusFilter: string[];
+    showArchived: boolean;
+    focusedThreadId?: string;
+}
+
+export const defaultViewState: ViewState = {
+    grouping: 'thread',
+    textFilter: '',
+    statusFilter: ['active', 'implementing', 'draft'],
+    showArchived: false,
+};
