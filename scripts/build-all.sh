@@ -3,8 +3,22 @@
 
 set -e  # Stop on first error
 
-echo "🔍 Linting core purity..."
-npm run lint
+LINT=false
+
+# Parse arguments
+for arg in "$@"; do
+    case $arg in
+        --lint)
+            LINT=true
+            shift
+            ;;
+    esac
+done
+
+if [ "$LINT" = true ]; then
+    echo "🔍 Linting core purity..."
+    npm run lint
+fi
 
 echo "🧹 Cleaning dist folders..."
 rm -rf packages/core/dist packages/fs/dist packages/app/dist packages/cli/dist
