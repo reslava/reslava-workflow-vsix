@@ -29,10 +29,12 @@ export function isStepBlocked(
         // Cross‑plan dependency: plan ID
         if (blocker.includes('-plan-')) {
             const planEntry = index.documents.get(blocker);
-            if (!planEntry) return true;           // Plan doesn't exist
-            if (!planEntry.exists) return true;    // Plan file missing
-            // Cannot check status without loading the plan; assume it's blocking if not done
-            return true;
+            // If the plan doesn't exist or the file is missing, consider it blocked.
+            if (!planEntry || !planEntry.exists) return true;
+            // If the plan exists, we cannot check its status without loading the document.
+            // For now, assume it is NOT blocked (the blocker resolution is best‑effort).
+            // A future enhancement could load the plan to check its status.
+            continue;
         }
     }
 
