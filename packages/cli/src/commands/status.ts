@@ -3,11 +3,8 @@ import { getState, GetStateInput } from '../../../app/dist';
 import { getActiveLoomRoot, loadThread, buildLinkIndex } from '../../../fs/dist';
 import { ConfigRegistry } from '../../../core/dist';
 import * as fs from 'fs-extra';
-import { Thread } from '../../../core/dist';
 import { getThreadStatus, getThreadPhase } from '../../../core/dist';
 import { PlanDoc } from '../../../core/dist';
-import { LinkIndex } from '../../../core/dist';
-import { buildLinkIndex as buildIndex } from '../../../fs/dist';
 import { ThreadStatus } from '../../../core/dist';
 import { isStepBlocked, findNextStep } from '../../../core/dist';
 
