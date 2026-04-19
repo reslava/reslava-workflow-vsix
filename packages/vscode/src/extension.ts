@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { LoomTreeProvider } from './tree/treeProvider';
 import { ViewStateManager } from './view/viewStateManager';
 import { weaveIdeaCommand } from './commands/weaveIdea';
+import { weaveDesignCommand } from './commands/weaveDesign';
+import { weavePlanCommand } from './commands/weavePlan';
 import { showGroupingSelector } from './commands/grouping';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -25,6 +27,8 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('loom.refresh', syncAndRefresh),
         vscode.commands.registerCommand('loom.weaveIdea', () => weaveIdeaCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.weaveDesign', weaveDesignCommand),
+        vscode.commands.registerCommand('loom.weavePlan', weavePlanCommand),
         vscode.commands.registerCommand('loom.setGrouping', () => showGroupingSelector(viewStateManager, treeProvider))
     );
 
