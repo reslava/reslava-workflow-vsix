@@ -4,7 +4,7 @@ id: vscode-extension-visual-design
 title: "VS Code Extension — Visual Design Blueprint"
 status: active
 created: 2026-04-19
-version: 1.1.0
+version: 1.2.0
 tags: [vscode, ui, tree-view, toolbar, design]
 parent_id: vscode-extension-design
 child_ids: []
@@ -17,9 +17,39 @@ requires_load: [vscode-extension-design]
 
 Define the complete visual and interactive behavior of the Loom VS Code extension. This document serves as the blueprint for the tree view, toolbar, command palette, file watcher, and AI approval panel. It ensures the UI layer is a thin, consistent consumer of the `app` layer use‑cases.
 
-## 1. Tree View
+## 1. Activation and Loom Detection
 
-### 1.1 Root Level: Threads
+The extension automatically detects the operational mode based on the filesystem. No user configuration is required.
+
+### 1.1 Detection Logic
+
+| Scenario | Behavior |
+| :--- | :--- |
+| Workspace contains a `.loom/` directory | Activate in **mono‑loom mode**. The active loom is the workspace root. The global registry is **ignored**. |
+| No local `.loom/`, but `~/.loom/config.yaml` exists | Activate in **multi‑loom mode**. Use the `active_loom` from the global registry. |
+| Neither exists | Extension remains inactive (shows a welcome screen with `Loom: Initialize Workspace` command). |
+
+### 1.2 `getActiveLoomRoot()` Behavior in the Extension
+
+The extension uses the same `getActiveLoomRoot()` function from the `fs` layer that the CLI uses. The resolution order is:
+
+1. **Walk up from the workspace root** looking for a `.loom/` directory.
+2. **If found**, return that directory (mono‑loom mode).
+3. **If not found**, check `~/.loom/config.yaml` for an `active_loom` (multi‑loom mode).
+4. **If neither**, the extension remains inactive.
+
+This ensures the extension behaves identically to the CLI when run from the same directory.
+
+### 1.3 Status Bar Indicator
+
+- **Mono‑loom:** Displays `🧵 (local)`.
+- **Multi‑loom:** Displays `🧵 <loom-name>` (e.g., `🧵 default`).
+
+Clicking the status bar item opens the Loom Switcher (in multi‑loom mode) or shows the current workspace path (in mono‑loom mode).
+
+## 2. Tree View
+
+### 2.1 Root Level: Threads
 
 The primary view is named "Loom" and appears in the Explorer sidebar. It displays a hierarchical list of all threads in the active loom.
 
@@ -31,7 +61,7 @@ The primary view is named "Loom" and appears in the Explorer sidebar. It display
 └── 📁 docs-infra (DONE)
 ```
 
-### 1.2 Thread Node (Expanded)
+### 2.2 Thread Node (Expanded)
 
 When expanded, each thread reveals its documents grouped by type.
 
@@ -55,7 +85,7 @@ When expanded, each thread reveals its documents grouped by type.
     └── 💬 2026-04-19-design-debate.md
 ```
 
-### 1.3 Node Icons & Decorations
+### 2.3 Node Icons & Decorations
 
 | Node Type | Icon | Description |
 | :--- | :--- | :--- |
@@ -72,7 +102,7 @@ When expanded, each thread reveals its documents grouped by type.
 | Context | 📝 | Note icon. |
 | Chat | 💬 | Comment icon. |
 
-### 1.4 Context Menus
+### 2.4 Context Menus
 
 Right‑clicking a node reveals context‑specific actions.
 
@@ -86,17 +116,17 @@ Right‑clicking a node reveals context‑specific actions.
 
 All actions delegate to the corresponding `app` use‑case.
 
-## 2. Toolbar
+## 3. Toolbar
 
 The view title bar contains controls for grouping, filtering, and primary actions.
 
-### 2.1 Toolbar Layout
+### 3.1 Toolbar Layout
 
 ```
 [ Group By ▼ ]  [ 🔍 Filter ]  [ ☑ Show Archived ]  [ ✚ Weave ▼ ]
 ```
 
-### 2.2 Grouping Selector
+### 3.2 Grouping Selector
 
 Clicking "Group By" opens a QuickPick with options:
 
@@ -107,14 +137,14 @@ Clicking "Group By" opens a QuickPick with options:
 
 The selection updates the `ViewState` and refreshes the tree.
 
-### 2.3 Filter Controls
+### 3.3 Filter Controls
 
 | Control | Behavior |
 | :--- | :--- |
 | 🔍 Filter | Text input that filters tree items by name or title. |
 | ☑ Show Archived | Toggle to include `done/` and `deferred/` documents in the tree. |
 
-### 2.4 Weave Dropdown
+### 3.4 Weave Dropdown
 
 Provides quick access to creation commands:
 
@@ -123,7 +153,7 @@ Provides quick access to creation commands:
 - **Weave Plan** – Prompts for thread selection, calls `app/weavePlan`.
 - **New Chat** – Creates a new chat file in `chats/`.
 
-## 3. Command Palette
+## 4. Command Palette
 
 All commands are prefixed with `Loom:` and accessible via `Ctrl+Shift+P`.
 
@@ -142,8 +172,10 @@ All commands are prefixed with `Loom:` and accessible via `Ctrl+Shift+P`.
 | `Loom: Show Status` | `status` (via `getState`) |
 | `Loom: Switch Loom` | `switchLoom` (only in multi‑loom mode) |
 | `Loom: List Looms` | `listLooms` |
+| `Loom: Initialize Workspace` | `initLocal` (mono‑loom) |
+| `Loom: Initialize Global Loom` | `initMulti` |
 
-## 4. File Watcher
+## 5. File Watcher
 
 The extension watches `**/threads/**/*.md` for changes.
 
@@ -151,15 +183,15 @@ The extension watches `**/threads/**/*.md` for changes.
 File change → Debounce (300ms) → getState() → Diff with cached state → Tree refresh (changed nodes only)
 ```
 
-### 4.1 Flow Details
+### 5.1 Flow Details
 
 1. **File System Event:** A `.md` file within `threads/` is created, changed, or deleted.
 2. **Debounce:** A 300ms debounce prevents excessive refreshes during rapid edits.
 3. **`getState()` Call:** The extension calls `app/getState()`, which performs a **full link index rebuild** and loads all threads. This guarantees consistency with the filesystem.
-4. **Diff with Cached State:** The `LoomTreeProvider` compares the newly returned `LoomState` with its internally cached `LoomState`. It identifies which threads have been added, removed, or modified (by comparing `thread.id` and a shallow hash of each thread's document IDs and statuses).
+4. **Diff with Cached State:** The `LoomTreeProvider` compares the newly returned `LoomState` with its internally cached `LoomState`. It identifies which threads have been added, removed, or modified.
 5. **Selective Tree Refresh:** The tree provider fires change events **only for the threads that actually changed**. VS Code's tree view efficiently re‑renders only those nodes.
 
-### 4.2 Performance Characteristics
+### 5.2 Performance Characteristics
 
 | Aspect | Behavior |
 | :--- | :--- |
@@ -167,7 +199,7 @@ File change → Debounce (300ms) → getState() → Diff with cached state → T
 | **Tree Rendering** | Only modified threads are re‑rendered, minimizing UI work. |
 | **Debounce** | Prevents excessive refreshes during rapid typing or batch operations. |
 
-### 4.3 Future Optimization Path
+### 5.3 Future Optimization Path
 
 If real‑world usage reveals performance bottlenecks with very large workspaces (500+ threads), the architecture is designed to accommodate a true incremental path:
 
@@ -175,21 +207,17 @@ If real‑world usage reveals performance bottlenecks with very large workspaces
 File change → updateIndexForFile() → updateState() → Tree refresh
 ```
 
-This would require:
-- An `updateState` use‑case in the `app` layer that accepts a pre‑updated `LinkIndex`.
-- Caching the `LinkIndex` in the extension and patching it via `updateIndexForFile`.
-
 This optimization is **deferred** and will only be pursued if performance data justifies the added complexity.
 
-### 4.4 Diagnostics
+### 5.4 Diagnostics
 
 Diagnostics (squiggles for broken links, missing fields) are updated on the same refresh cycle. After `getState()` returns, the extension calls `app/validate` and converts the returned issues to VS Code `Diagnostic` objects.
 
-## 5. AI Approval Panel (Webview)
+## 6. AI Approval Panel (Webview)
 
 When the user invokes `Loom: AI Propose` (Action Mode), a webview panel appears.
 
-### 5.1 Workflow
+### 6.1 Workflow
 
 1. User selects a design document and runs `Loom: AI Propose`.
 2. Extension calls `app/aiPropose` (future use‑case) with the document context.
@@ -201,7 +229,7 @@ When the user invokes `Loom: AI Propose` (Action Mode), a webview panel appears.
 5. On approval, the extension fires the corresponding event via `app/runEvent`.
 6. The document is updated, and the tree view refreshes.
 
-### 5.2 Webview UI Sketch
+### 6.2 Webview UI Sketch
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -224,7 +252,7 @@ When the user invokes `Loom: AI Propose` (Action Mode), a webview panel appears.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 6. Integration with `app` Layer
+## 7. Integration with `app` Layer
 
 All UI actions are thin wrappers. Example for "Weave Idea":
 
@@ -240,14 +268,14 @@ async function weaveIdeaCommand() {
 
 No business logic lives in the extension—only presentation and user input collection.
 
-## 7. Call Flow Symmetry
+## 8. Call Flow Symmetry
 
 The architecture ensures identical data flow for both the CLI and the VS Code extension.
 
-### 7.1 VS Code Extension — File Watcher
+### 8.1 VS Code Extension — File Watcher
 
 ```
-File System Event → Debounce → getState() → Tree Refresh
+File System Event → Debounce → getState() → Tree Refresh (changed nodes only)
                            │
                            ▼
               ┌──────────────────────────┐
@@ -265,7 +293,7 @@ File System Event → Debounce → getState() → Tree Refresh
               └──────────────────────────┘
 ```
 
-### 7.2 CLI `loom status`
+### 8.2 CLI `loom status`
 
 ```
 User Command → statusCommand() → getState() → Console Output
@@ -288,7 +316,7 @@ User Command → statusCommand() → getState() → Console Output
 
 This symmetry is the hallmark of our clean architecture: thin delivery layers, a unified `app` layer, and pure infrastructure and domain layers.
 
-## 8. Next Steps
+## 9. Next Steps
 
 - Implement `vscode-extension-plan-004` (core tree view).
 - Implement `vscode-extension-plan-005` (thread‑based grouping).

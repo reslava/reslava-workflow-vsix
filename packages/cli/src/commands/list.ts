@@ -10,12 +10,17 @@ export async function listCommand(): Promise<void> {
         
         if (looms.length === 0) {
             console.log(chalk.yellow('No looms registered.'));
-            console.log(chalk.gray(`  Run 'loom init' to create the default loom.`));
-            console.log(chalk.gray(`  Run 'loom setup <name>' to create a named loom.`));
+            console.log(chalk.gray(`  Run 'loom init' to create a mono‑loom in the current directory.`));
+            console.log(chalk.gray(`  Run 'loom init-multi' to create the global multi‑loom.`));
             return;
         }
         
-        console.log(chalk.bold('\n🧵 Registered Looms\n'));
+        // Determine mode for header
+        const isMono = registry.isMonoLoom();
+        const modeText = isMono ? '' : chalk.gray(' (multi‑loom mode)');
+        
+        console.log(chalk.bold(`\n🧵 Registered Looms${modeText}\n`));
+        
         for (const loom of looms) {
             const marker = loom.isActive ? chalk.green('★') : ' ';
             const nameDisplay = loom.isActive ? chalk.green.bold(loom.name) : loom.name;

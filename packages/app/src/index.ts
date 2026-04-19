@@ -14,7 +14,7 @@ export { weavePlan, WeavePlanInput, WeavePlanDeps } from './weavePlan';
 // ============================================================================
 // Use‑Cases — Loom Management
 // ============================================================================
-export { initLoom, InitInput, InitDeps } from './init';
+export { initLocal, InitLocalInput, initMulti, InitMultiInput, InitDeps } from './init';
 export { setupLoom, SetupInput, SetupDeps } from './setup';
 export { switchLoom, SwitchInput, SwitchDeps } from './switch';
 export { listLooms, LoomListEntry, ListDeps } from './list';
