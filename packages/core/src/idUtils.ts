@@ -53,7 +53,7 @@ export function generatePermanentId(title: string, type: string, existingIds: Se
 export function generatePlanId(threadId: string, existingPlanIds: string[]): string {
     const prefix = `${threadId}-plan-`;
     const numbers = existingPlanIds
-        .map(p => p.match(/-plan-(\d+)\.md$/)?.[1])
+        .map(p => p.match(/-plan-(\d+)$/)?.[1])
         .filter(Boolean)
         .map(Number);
     const next = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
