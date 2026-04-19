@@ -8,6 +8,7 @@ import { ThreadStatus } from '../../core/dist/entities/thread';
 import { getThreadStatus } from '../../core/dist/derived';
 import { filterThreadsByStatus, filterThreadsByPhase, filterThreadsById } from '../../core/dist/filters/threadFilters';
 import { sortThreadsById } from '../../core/dist/filters/sorting';
+import { isStepBlocked } from '../../core/dist/planUtils';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
@@ -87,14 +88,14 @@ export async function getState(deps: GetStateDeps, input?: GetStateInput): Promi
     const totalPlans = filteredThreads.reduce((sum, t) => sum + t.plans.length, 0);
     const stalePlans = filteredThreads.reduce((sum, t) => sum + t.plans.filter(p => p.staled).length, 0);
     
+    // Accurate blocked steps count using isStepBlocked
     let blockedSteps = 0;
     for (const thread of filteredThreads) {
         for (const plan of thread.plans) {
-            if (plan.steps) {
-                for (const step of plan.steps) {
-                    if (!step.done && step.blockedBy && step.blockedBy.length > 0) {
-                        blockedSteps++;
-                    }
+            if (!plan.steps) continue;
+            for (const step of plan.steps) {
+                if (!step.done && isStepBlocked(step, plan, index)) {
+                    blockedSteps++;
                 }
             }
         }
