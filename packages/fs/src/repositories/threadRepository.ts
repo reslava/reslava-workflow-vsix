@@ -3,6 +3,9 @@ import * as fs from 'fs-extra';
 import { Thread } from '../../../core/dist/entities/thread';
 import { Document } from '../../../core/dist/entities/document';
 import { DesignDoc } from '../../../core/dist/entities/design';
+import { IdeaDoc } from '../../../core/dist/entities/idea';
+import { PlanDoc } from '../../../core/dist/entities/plan';
+import { CtxDoc } from '../../../core/dist/entities/ctx';
 import { loadDoc, FrontmatterParseError } from '../serializers/frontmatterLoader';
 import { saveDoc } from '../serializers/frontmatterSaver';
 import { findMarkdownFiles } from '../utils/pathUtils';
@@ -15,7 +18,15 @@ import {
 } from '../../../core/dist/validation';
 import { LinkIndex } from '../../../core/dist/linkIndex';
 
-export async function loadThread(loomRoot: string, threadId: string, index?: LinkIndex): Promise<Thread> {
+/**
+ * Loads a thread by its ID.
+ *
+ * @param loomRoot - The absolute path to the loom root.
+ * @param threadId - The thread identifier.
+ * @param index - Optional pre‑built link index for validation warnings.
+ * @returns A promise resolving to the Thread, or null if the folder is empty.
+ */
+export async function loadThread(loomRoot: string, threadId: string, index?: LinkIndex): Promise<Thread | null> {
     const threadPath = resolveThreadPath(loomRoot, threadId);
     if (!await fs.pathExists(threadPath)) {
         throw new Error(`Thread directory not found: ${threadPath}`);
@@ -36,18 +47,17 @@ export async function loadThread(loomRoot: string, threadId: string, index?: Lin
         }
     }
     
-    const primaryDesigns = docs.filter(d => d.type === 'design' && (d as DesignDoc).role === 'primary') as DesignDoc[];
-    
-    if (primaryDesigns.length === 0) {
-        throw new Error(`No primary design found for thread '${threadId}'`);
-    }
-    if (primaryDesigns.length > 1) {
-        const ids = primaryDesigns.map(d => d.id).join(', ');
-        throw new Error(`Thread '${threadId}' has multiple primary designs: ${ids}`);
+    // Empty folder is not a thread
+    if (docs.length === 0) {
+        return null;
     }
     
-    const primaryDesign = primaryDesigns[0];
+    const ideas = docs.filter(d => d.type === 'idea') as IdeaDoc[];
+    const designs = docs.filter(d => d.type === 'design') as DesignDoc[];
+    const plans = docs.filter(d => d.type === 'plan') as PlanDoc[];
+    const contexts = docs.filter(d => d.type === 'ctx') as CtxDoc[];
     
+    // Validation warnings (if index provided)
     if (index) {
         for (const doc of docs) {
             if (doc.parent_id && !validateParentExists(doc, index)) {
@@ -64,19 +74,20 @@ export async function loadThread(loomRoot: string, threadId: string, index?: Lin
                 }
             }
         }
-        const primaryIssue = validateSinglePrimaryDesign(docs);
-        if (primaryIssue) {
-            console.warn(`⚠️  [${threadId}] ${primaryIssue.message}`);
+        
+        // Warn if multiple primary designs exist (informational only)
+        const primaryDesigns = designs.filter(d => d.role === 'primary');
+        if (primaryDesigns.length > 1) {
+            console.warn(`⚠️  [${threadId}] Multiple primary designs found. Using first one as primary.`);
         }
     }
 
     return {
         id: threadId,
-        idea: docs.find(d => d.type === 'idea') as any,
-        design: primaryDesign,
-        supportingDesigns: docs.filter(d => d.type === 'design' && (d as DesignDoc).role !== 'primary') as DesignDoc[],
-        plans: docs.filter(d => d.type === 'plan') as any,
-        contexts: docs.filter(d => d.type === 'ctx') as any,
+        ideas,
+        designs,
+        plans,
+        contexts,
         allDocs: docs,
     };
 }

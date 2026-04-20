@@ -3,7 +3,7 @@ import { loadThread } from '../../fs/dist';
 import { buildLinkIndex } from '../../fs/dist';
 import { ConfigRegistry } from '../../core/dist/registry';
 import { LoomState, LoomMode } from '../../core/dist/entities/state';
-import { Thread } from '../../core/dist/entities/thread';
+import { Thread, getPrimaryDesign } from '../../core/dist/entities/thread';
 import { ThreadStatus } from '../../core/dist/entities/thread';
 import { getThreadStatus } from '../../core/dist/derived';
 import { filterThreadsByStatus, filterThreadsByPhase, filterThreadsById } from '../../core/dist/filters/threadFilters';
@@ -24,7 +24,7 @@ export interface GetStateInput {
 
 export interface GetStateDeps {
     getActiveLoomRoot: (wsRoot?: string) => string;
-    loadThread: (loomRoot: string, threadId: string, index?: any) => Promise<Thread>;
+    loadThread: (loomRoot: string, threadId: string, index?: any) => Promise<Thread | null>;
     buildLinkIndex: (loomRoot: string) => Promise<any>;
     registry: ConfigRegistry;
     fs: typeof fs;
@@ -52,7 +52,9 @@ export async function getState(deps: GetStateDeps, input?: GetStateInput): Promi
             if (stat.isDirectory() && entry !== '_archive') {
                 try {
                     const thread = await deps.loadThread(loomRoot, entry, index);
-                    allThreads.push(thread);
+                    if (thread) {
+                        allThreads.push(thread);
+                    }
                 } catch (e) {
                     // Skip invalid threads
                 }
@@ -83,7 +85,11 @@ export async function getState(deps: GetStateDeps, input?: GetStateInput): Promi
     const implementingThreads = filteredThreads.filter(t => getThreadStatus(t) === 'IMPLEMENTING').length;
     const doneThreads = filteredThreads.filter(t => getThreadStatus(t) === 'DONE').length;
     const totalPlans = filteredThreads.reduce((sum, t) => sum + t.plans.length, 0);
-    const stalePlans = filteredThreads.reduce((sum, t) => sum + t.plans.filter(p => p.staled).length, 0);
+    const stalePlans = filteredThreads.reduce((sum, t) => {
+        const primary = getPrimaryDesign(t);
+        if (!primary) return sum;
+        return sum + t.plans.filter(p => p.design_version < primary.version).length;
+    }, 0);
     
     let blockedSteps = 0;
     for (const thread of filteredThreads) {
