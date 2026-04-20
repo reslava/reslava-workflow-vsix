@@ -4,7 +4,7 @@ id: anchor-free-threads-design
 title: "Anchor‑Free Threads — Zero‑Friction, Graph‑Based Workflows"
 status: active
 created: 2026-04-20
-version: 3
+version: 2
 tags: [thread, domain-model, graph, zero-friction, ui]
 parent_id: core-engine-design
 child_ids: [anchor-free-threads-plan-001]
@@ -21,24 +21,21 @@ Transform Loom from a linear, design‑centric workflow into a **zero‑friction
 ## Core Principles
 
 1. **A Thread is a Folder**  
-   Any directory under `threads/` that contains at least one Loom document (`.md` file with valid frontmatter) is a valid thread. Empty directories are ignored. There is no required "primary" document.
+   Any directory under `threads/` that contains at least one Loom document (`.md` file with valid frontmatter) is a valid thread. There is no required “primary” document.
 
 2. **Physical ≠ Logical**  
    - **Physical location** (the thread folder) indicates the *primary* association.  
    - **Logical relationships** are captured via `parent_id` and `child_ids` links.  
    A plan in `vscode-extension/` can have `parent_id` pointing to a design in `core-engine/`.
 
-3. **Cancelled Documents are Archived**  
-   When a document is cancelled, it is moved to `_archive/cancelled/`. It no longer affects the thread's derived state.
-
-4. **Zero Friction Creation**  
+3. **Zero Friction Creation**  
    Commands like `weave idea`, `weave design`, and `weave plan` create the thread directory if it doesn't exist. No prerequisites.
 
-5. **State is Derived from Plans**  
-   `ThreadStatus` reflects the execution progress of the thread's plans. The priority order is explicit and deterministic.
+4. **State is Derived from the Graph**  
+   `ThreadStatus` and `ThreadPhase` are computed from the most advanced document in the folder.
 
-6. **UI Adapts to Context**  
-   Toolbar buttons provide global, context‑free actions. Tree node inline buttons offer contextual actions and are dynamically shown or hidden based on the current document relationships.
+5. **UI Adapts to Context**  
+   Toolbar buttons provide global, context‑free actions. Tree node inline buttons offer contextual actions (e.g., "Create Plan" on a design) and are dynamically shown or hidden based on the current document relationships (using `LinkIndex` and `LoomState`).
 
 ## Domain Model Changes
 
@@ -56,38 +53,18 @@ export interface Thread {
 ```
 
 - The singular `idea` and `design` fields are removed.
-- There is no "primary" designation.
+- There is no “primary” designation.
 
-### 2. `ThreadStatus` Derivation (Final)
+### 2. `ThreadStatus` and `ThreadPhase` (`core/src/derived.ts`)
 
-The status is derived **only from plans**. Ideas and designs do not affect the status (they keep the thread `ACTIVE` by default). Cancelled documents are archived and excluded.
+- **Status:** Derived from the most “active” document status (e.g., if any plan is `implementing`, thread is `IMPLEMENTING`).
+- **Phase:** Derived from the presence of document types (e.g., if plans exist, phase is `implementing` or `planning`; if only ideas exist, phase is `ideating`).
 
-| Priority | Status | Condition |
-| :--- | :--- | :--- |
-| 1 | `IMPLEMENTING` | Any plan has `status: 'implementing'`. |
-| 2 | `DONE` | All plans are `'done'` (and at least one plan exists). |
-| 3 | `ACTIVE` | At least one plan is `'draft'` or `'active'`. |
-| 4 | `BLOCKED` | At least one plan is `'blocked'`. |
-| 5 | `ACTIVE` | Fallback (e.g., only ideas or designs exist). |
-
-**Implementation:**
-```typescript
-export function getThreadStatus(thread: Thread): ThreadStatus {
-    const plans = thread.plans;
-    
-    if (plans.some(p => p.status === 'implementing')) return 'IMPLEMENTING';
-    if (plans.length > 0 && plans.every(p => p.status === 'done')) return 'DONE';
-    if (plans.some(p => p.status === 'active' || p.status === 'draft')) return 'ACTIVE';
-    if (plans.some(p => p.status === 'blocked')) return 'BLOCKED';
-    return 'ACTIVE';
-}
-```
-
-### 3. `loadThread` Contract (`fs/src/repositories/threadRepository.ts`)
+### 3. `loadThread` (`fs/src/repositories/threadRepository.ts`)
 
 - Scans the folder for all `.md` files.
-- If the folder is empty, returns `null` (caller filters it out).
 - Returns a `Thread` object regardless of which document types are present.
+- No error is thrown if a primary design is missing.
 
 ### 4. Validation (`core/src/validation.ts`)
 
@@ -129,6 +106,28 @@ Each tree node can display one or more inline action buttons. These buttons are 
       📋 payment-system-plan-001.md         [Complete Step] [Block]
 ```
 
+### 3. Dynamic Button Visibility (Implementation Sketch)
+
+The `LoomTreeProvider` already holds `LoomState` (which includes the `LinkIndex`). When creating a tree node, we can evaluate simple predicates:
+
+```typescript
+private createIdeaNode(idea: IdeaDoc, thread: Thread): TreeNode {
+    const hasDesign = thread.designs.some(d => d.parent_id === idea.id);
+    const buttons: vscode.TreeItemButton[] = [];
+    if (!hasDesign) {
+        buttons.push({
+            command: 'loom.weaveDesignFromIdea',
+            title: 'Create Design',
+            iconPath: icon(Icons.design),
+            tooltip: 'Create a design linked to this idea',
+        });
+    }
+    // ...
+}
+```
+
+The `LinkIndex` can also be used to check cross‑thread relationships if needed.
+
 ## Document Creation Commands
 
 | Command | Behavior |
@@ -146,27 +145,18 @@ All creation commands auto‑create the thread directory if it doesn't exist.
 - System parses the table into structured frontmatter `steps` on save.
 - `loom status` displays blocker information using `isStepBlocked`.
 - `loom validate` warns about broken `Blocked by` references.
+- The user remains in full control of the table content.
 
 ### Phase 2: Intelligent Assistance (Post‑MVP)
-- **Autocomplete for `Blocked by`:** Suggestions from the `LinkIndex`.
-- **Warning Squiggles:** Visual feedback for broken references.
-- **Inline Actions:** Tree node button `[Add Step]` to append a row.
-- **No Visual Drag‑and‑Drop Reordering:** Markdown tables remain the primary interface.
+- **Autocomplete for `Blocked by`:** In VS Code, typing `Step` or a plan ID triggers suggestions from the `LinkIndex`.
+- **Warning Squiggles:** Visual feedback in the editor for broken references (e.g., `Step 5` when only 3 steps exist).
+- **Inline Actions:** Tree node buttons like `[Add Step]` that append a new row to the table.
+- **No Visual Drag‑and‑Drop Reordering:** Markdown tables are simple, universal, and Git‑friendly. Keeping them as the primary interface avoids the complexity of a custom webview editor.
 
 ## Reorganization & Drag‑and‑Drop (Future)
 
-- Moving a document to a different thread folder updates its physical location. The system offers to update all inbound `parent_id` links.
+- Moving a document to a different thread folder updates its physical location. The system offers to update all inbound `parent_id` links (similar to a refactoring).
 - The `rename` use‑case can be extended to handle directory moves and reference updates.
-
-## Migration Strategy (Phased)
-
-Due to the significant impact of changing `Thread` from a single `design` to `designs[]`, implementation will follow a phased approach:
-
-| Phase | Goal | Approach |
-| :--- | :--- | :--- |
-| **1. Internal Model** | Introduce `designs[]` while keeping a `getPrimaryDesign()` helper. | `Thread` gets the new structure. All existing consumers use the helper, which returns `designs[0]`. System remains stable. |
-| **2. Incremental Refactor** | Update each layer to work with multiple designs. | Refactor `core`, then `fs`, then `app`, then `cli`, then `vscode`. Run tests after each layer. |
-| **3. Remove Helper** | Delete `getPrimaryDesign()`. | System now fully supports anchor‑free threads. |
 
 ## Benefits
 
@@ -174,9 +164,9 @@ Due to the significant impact of changing `Thread` from a single `design` to `de
 | :--- | :--- |
 | **Zero Friction** | Start a thread with any document type. No prerequisites. |
 | **Graph Flexibility** | Link documents freely across threads. |
-| **Intelligent UI** | Inline buttons appear only when relevant. |
-| **True Visibility** | Every document appears immediately. |
-| **Simpler Mental Model** | A thread is just a folder. |
+| **Intelligent UI** | Inline buttons appear only when relevant, reducing clutter. |
+| **True Visibility** | Every document appears immediately; nothing is hidden. |
+| **Simpler Mental Model** | A thread is just a folder. Loom provides structure without imposing it. |
 
 ## Supersedes
 
@@ -184,13 +174,13 @@ This design completely replaces `draft-threads-design.md`.
 
 ## Open Questions
 
-- Should the VS Code tree show a warning if a thread folder is empty? (Empty folders are ignored, so this is not applicable.)
-- How should `loom status` display threads with no plans? (Show `ACTIVE`.)
+- Should the VS Code tree show a warning if a thread folder is empty? (An empty folder is not a thread—it has no documents.)
+- How should `loom status` display threads with no design? (Show phase `ideating` and status `ACTIVE`.)
 
 ## Decision
 
-Adopt the anchor‑free thread model with the UI interaction model and phased migration strategy described. Implementation is deferred until the core VS Code extension commands are complete.
+Adopt the anchor‑free thread model with the UI interaction model described. Implementation is deferred until the core VS Code extension commands are complete.
 
 ## Next Steps
 
-- Execute `anchor-free-threads-plan-001.md` (to be updated with the phased migration steps).
+- Execute `anchor-free-threads-plan-001.md`.
