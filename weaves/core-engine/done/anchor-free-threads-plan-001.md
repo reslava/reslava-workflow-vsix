@@ -2,7 +2,7 @@
 type: plan
 id: anchor-free-threads-plan-001
 title: "Implement Anchor‑Free Threads (Phased Migration)"
-status: deferred
+status: done
 created: 2026-04-20
 version: 1
 tags: [thread, domain-model, graph, zero-friction, migration, deferred]
@@ -230,10 +230,10 @@ All tests must pass before proceeding to Phase 2.
 
 | Done | # | Step | Files touched | Blocked by |
 |---|---|---|---|---|
-| 🔳 | 3.1 | Remove `getPrimaryDesign()` helper | `packages/core/src/entities/thread.ts` | Phase 2 |
-| 🔳 | 3.2 | Remove `validateSinglePrimaryDesign` | `packages/core/src/validation.ts` | Phase 2 |
-| 🔳 | 3.3 | Update documentation to reflect anchor‑free model | `README.md`, `references/` | Phase 2 |
-| 🔳 | 3.4 | Run final full test suite | All packages | Steps 3.1‑3.3 |
+| ✅ | 3.1 | Remove `getPrimaryDesign()` helper | `packages/core/src/entities/thread.ts` | Phase 2 |
+| ✅ | 3.2 | Remove `validateSinglePrimaryDesign` | `packages/core/src/validation.ts` | Phase 2 |
+| ✅ | 3.3 | Update documentation to reflect anchor‑free model | `README.md`, `references/` | Phase 2 |
+| ✅ | 3.4 | Run final full test suite | All packages | Steps 3.1‑3.3 |
 
 ---
 
