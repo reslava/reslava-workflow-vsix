@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import { completeStep } from '../../../app/dist/completeStep';
-import { loadThread } from '../../../fs/dist';
+import { loadWeave} from '../../../fs/dist';
 import { runEvent } from '../../../app/dist/runEvent';
-import { saveThread } from '../../../fs/dist';
+import { saveWeave } from '../../../fs/dist';
 import { getActiveLoomRoot } from '../../../fs/dist';
 
 export async function completeStepCommand(planId: string, options: { step?: string }): Promise<void> {
@@ -15,18 +15,18 @@ export async function completeStepCommand(planId: string, options: { step?: stri
         const loomRoot = getActiveLoomRoot();
         
         // Wrapper that handles null thread
-        const loadThreadOrThrow = async (root: string, tid: string) => {
-            const thread = await loadThread(root, tid);
+        const loadWeaveOrThrow = async (root: string, tid: string) => {
+            const thread = await loadWeave(root, tid);
             if (!thread) throw new Error(`Thread '${tid}' is empty or does not exist.`);
             return thread;
         };
 
         const runEventBound = (tid: string, evt: any) =>
-            runEvent(tid, evt, { loadThread: loadThreadOrThrow, saveThread, loomRoot });
+            runEvent(tid, evt, { loadWeave: loadWeaveOrThrow, saveWeave, loomRoot });
 
         const result = await completeStep(
             { planId, step },
-            { loadThread: loadThreadOrThrow, runEvent: runEventBound, loomRoot }
+            { loadWeave: loadWeaveOrThrow, runEvent: runEventBound, loomRoot }
         );
 
         console.log(chalk.green(`✅ Step ${step} completed in '${planId}'`));

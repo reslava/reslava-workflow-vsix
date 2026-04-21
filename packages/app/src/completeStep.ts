@@ -1,4 +1,4 @@
-import { loadThread } from '../../fs/dist';
+import { loadWeave} from '../../fs/dist';
 import { runEvent } from './runEvent';
 import { PlanDoc } from '../../core/dist/entities/plan';
 import { WorkflowEvent } from '../../core/dist/events/workflowEvent';
@@ -9,8 +9,8 @@ export interface CompleteStepInput {
 }
 
 export interface CompleteStepDeps {
-    loadThread: (loomRoot: string, threadId: string) => Promise<any>;
-    runEvent: (threadId: string, event: WorkflowEvent) => Promise<any>;
+    loadWeave: (loomRoot: string, weaveId: string) => Promise<any>;
+    runEvent: (weaveId: string, event: WorkflowEvent) => Promise<any>;
     loomRoot: string;
 }
 
@@ -18,18 +18,18 @@ export async function completeStep(
     input: CompleteStepInput,
     deps: CompleteStepDeps
 ): Promise<{ plan: PlanDoc; autoCompleted: boolean }> {
-    const threadId = input.planId.split('-plan-')[0];
-    if (!threadId) {
-        throw new Error(`Invalid plan ID format. Expected "{threadId}-plan-###", got "${input.planId}"`);
+    const weaveId = input.planId.split('-plan-')[0];
+    if (!weaveId) {
+        throw new Error(`Invalid plan ID format. Expected "{weaveId}-plan-###", got "${input.planId}"`);
     }
 
     const stepIndex = input.step - 1;
 
-    const thread = await deps.loadThread(deps.loomRoot, threadId);
+    const thread = await deps.loadWeave(deps.loomRoot, weaveId);
     const plan = thread.plans.find((p: any) => p.id === input.planId);
     
     if (!plan) {
-        throw new Error(`Plan '${input.planId}' not found in thread '${threadId}'`);
+        throw new Error(`Plan '${input.planId}' not found in thread '${weaveId}'`);
     }
 
     if (plan.status !== 'implementing') {
@@ -44,9 +44,9 @@ export async function completeStep(
         throw new Error(`Step ${input.step} is already completed.`);
     }
 
-    await deps.runEvent(threadId, { type: 'COMPLETE_STEP', planId: input.planId, stepIndex } as WorkflowEvent);
+    await deps.runEvent(weaveId, { type: 'COMPLETE_STEP', planId: input.planId, stepIndex } as WorkflowEvent);
 
-    const updatedThread = await deps.loadThread(deps.loomRoot, threadId);
+    const updatedThread = await deps.loadWeave(deps.loomRoot, weaveId);
     const updatedPlan = updatedThread.plans.find((p: any) => p.id === input.planId)!;
     const autoCompleted = updatedPlan.status === 'done';
 

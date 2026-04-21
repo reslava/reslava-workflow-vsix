@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import { Thread } from '../../../core/dist/entities/thread';
+import { Weave } from '../../../core/dist/entities/weave';
 import { Document } from '../../../core/dist/entities/document';
 import { DesignDoc } from '../../../core/dist/entities/design';
 import { IdeaDoc } from '../../../core/dist/entities/idea';
@@ -9,30 +9,29 @@ import { CtxDoc } from '../../../core/dist/entities/ctx';
 import { loadDoc, FrontmatterParseError } from '../serializers/frontmatterLoader';
 import { saveDoc } from '../serializers/frontmatterSaver';
 import { findMarkdownFiles } from '../utils/pathUtils';
-import { resolveThreadPath } from '../utils/workspaceUtils';
+import { resolveWeavePath } from '../utils/workspaceUtils';
 import {
     validateParentExists,
     getDanglingChildIds,
-    validateDesignRole,
-    validateSinglePrimaryDesign
+    validateDesignRole
 } from '../../../core/dist/validation';
 import { LinkIndex } from '../../../core/dist/linkIndex';
 
 /**
- * Loads a thread by its ID.
+ * Loads a weave by its ID.
  *
  * @param loomRoot - The absolute path to the loom root.
- * @param threadId - The thread identifier.
+ * @param weaveId - The weave identifier.
  * @param index - Optional pre‑built link index for validation warnings.
- * @returns A promise resolving to the Thread, or null if the folder is empty.
+ * @returns A promise resolving to the Weave, or null if the folder is empty.
  */
-export async function loadThread(loomRoot: string, threadId: string, index?: LinkIndex): Promise<Thread | null> {
-    const threadPath = resolveThreadPath(loomRoot, threadId);
-    if (!await fs.pathExists(threadPath)) {
-        throw new Error(`Thread directory not found: ${threadPath}`);
+export async function loadWeave(loomRoot: string, weaveId: string, index?: LinkIndex): Promise<Weave | null> {
+    const weavePath = resolveWeavePath(weaveId, loomRoot);
+    if (!await fs.pathExists(weavePath)) {
+        throw new Error(`Weave directory not found: ${weavePath}`);
     }
     
-    const files = await findMarkdownFiles(threadPath);
+    const files = await findMarkdownFiles(weavePath);
     const docs: Document[] = [];
     
     for (const file of files) {
@@ -47,7 +46,7 @@ export async function loadThread(loomRoot: string, threadId: string, index?: Lin
         }
     }
     
-    // Empty folder is not a thread
+    // Empty folder is not a weave
     if (docs.length === 0) {
         return null;
     }
@@ -75,15 +74,14 @@ export async function loadThread(loomRoot: string, threadId: string, index?: Lin
             }
         }
         
-        // Warn if multiple primary designs exist (informational only)
-        const primaryDesigns = designs.filter(d => d.role === 'primary');
-        if (primaryDesigns.length > 1) {
-            console.warn(`⚠️  [${threadId}] Multiple primary designs found. Using first one as primary.`);
+        // Warn if multiple designs exist (informational)
+        if (designs.length > 1) {
+            console.warn(`⚠️  [${weaveId}] Multiple designs found.`);
         }
     }
 
     return {
-        id: threadId,
+        id: weaveId,
         ideas,
         designs,
         plans,
@@ -92,27 +90,27 @@ export async function loadThread(loomRoot: string, threadId: string, index?: Lin
     };
 }
 
-function determinePathForDoc(doc: any, loomRoot: string, threadId: string): string {
-    const threadPath = resolveThreadPath(loomRoot, threadId);
+function determinePathForDoc(doc: any, loomRoot: string, weaveId: string): string {
+    const weavePath = resolveWeavePath(weaveId, loomRoot);
     switch (doc.type) {
-        case 'idea': return path.join(threadPath, `${threadId}-idea.md`);
+        case 'idea': return path.join(weavePath, `${weaveId}-idea.md`);
         case 'design': {
-            if (doc.role === 'primary') return path.join(threadPath, `${threadId}-design.md`);
-            return path.join(threadPath, `${doc.id}.md`);
+            if (doc.role === 'primary') return path.join(weavePath, `${weaveId}-design.md`);
+            return path.join(weavePath, `${doc.id}.md`);
         }
-        case 'plan': return path.join(threadPath, 'plans', `${doc.id}.md`);
+        case 'plan': return path.join(weavePath, 'plans', `${doc.id}.md`);
         case 'ctx': {
-            if (doc.source_version !== undefined) return path.join(threadPath, `${threadId}-ctx.md`);
-            return path.join(threadPath, 'ctx', `${doc.id}.md`);
+            if (doc.source_version !== undefined) return path.join(weavePath, `${weaveId}-ctx.md`);
+            return path.join(weavePath, 'ctx', `${doc.id}.md`);
         }
         default: throw new Error(`Unknown document type: ${doc.type}`);
     }
 }
 
-export async function saveThread(loomRoot: string, thread: Thread): Promise<void> {
-    for (const doc of thread.allDocs) {
+export async function saveWeave(loomRoot: string, weave: Weave): Promise<void> {
+    for (const doc of weave.allDocs) {
         let filePath = (doc as any)._path;
-        if (!filePath) filePath = determinePathForDoc(doc, loomRoot, thread.id);
+        if (!filePath) filePath = determinePathForDoc(doc, loomRoot, weave.id);
         await saveDoc(doc, filePath);
     }
 }

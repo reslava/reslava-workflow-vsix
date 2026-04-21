@@ -2,20 +2,20 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import { getState } from '@reslava-loom/app/dist/getState';
-import { loadThread, buildLinkIndex } from '@reslava-loom/fs/dist';
+import { loadWeave, buildLinkIndex } from '@reslava-loom/fs/dist';
 import { ConfigRegistry } from '@reslava-loom/core/dist/registry';
 import { LoomState } from '@reslava-loom/core/dist/entities/state';
-import { Thread } from '@reslava-loom/core/dist/entities/thread';
+import { Weave } from '@reslava-loom/core/dist/entities/weave';
 import { Document } from '@reslava-loom/core/dist/entities/document';
 import { PlanDoc } from '@reslava-loom/core/dist/entities/plan';
-import { getThreadStatus } from '@reslava-loom/core/dist/derived';
+import { getWeaveStatus } from '@reslava-loom/core/dist/derived';
 import { ViewStateManager } from '../view/viewStateManager';
 import { GroupingMode } from '../view/viewState';
-import { getDocumentIcon, getThreadIcon, getPlanIcon } from '../icons';
+import { getDocumentIcon, getWeaveIcon, getPlanIcon } from '../icons';
 
 export interface TreeNode extends vscode.TreeItem {
     children?: TreeNode[];
-    threadId?: string;
+    weaveId?: string;
     doc?: Document;
 }
 
@@ -61,52 +61,51 @@ export class LoomTreeProvider implements vscode.TreeDataProvider<TreeNode> {
             const registry = new ConfigRegistry();
             this.state = await getState({
                 getActiveLoomRoot: () => this.workspaceRoot!,
-                loadThread: (root, threadId) => loadThread(root, threadId),
+                loadWeave: (root, weaveId) => loadWeave(root, weaveId),
                 buildLinkIndex: (root) => buildLinkIndex(root),
                 registry,
                 fs,
                 workspaceRoot: this.workspaceRoot,
             });
 
-            if (this.state.threads.length === 0) {
-                return [this.messageNode('No threads found')];
+            if (this.state.weaves.length === 0) {
+                return [this.messageNode('No weaves found')];
             }
 
             const viewState = this.viewStateManager.getState();
-            return this.groupThreads(this.state.threads, viewState.grouping);
+            return this.groupWeaves(this.state.weaves, viewState.grouping);
         } catch (e: any) {
             console.error('🧵 Failed to load Loom state:', e);
             return [this.messageNode(`Error: ${e.message}`)];
         }
     }
 
-    private groupThreads(threads: Thread[], grouping: GroupingMode): TreeNode[] {
+    private groupWeaves(weaves: Weave[], grouping: GroupingMode): TreeNode[] {
         switch (grouping) {
             case 'type':
-                return this.groupByType(threads);
+                return this.groupByType(weaves);
             case 'status':
-                return this.groupByStatus(threads);
+                return this.groupByStatus(weaves);
             case 'release':
-                return this.groupByRelease(threads);
+                return this.groupByRelease(weaves);
             case 'thread':
             default:
-                return threads.map(t => this.createThreadNode(t));
+                return weaves.map(w => this.createWeaveNode(w));
         }
     }
 
-    private groupByType(threads: Thread[]): TreeNode[] {
+    private groupByType(weaves: Weave[]): TreeNode[] {
         const groups: Record<string, Document[]> = {
             idea: [],
             design: [],
             plan: [],
             ctx: [],
         };
-        for (const thread of threads) {
-            if (thread.idea) groups.idea.push(thread.idea);
-            groups.design.push(thread.design);
-            thread.supportingDesigns.forEach(d => groups.design.push(d));
-            thread.plans.forEach(p => groups.plan.push(p));
-            thread.contexts.forEach(c => groups.ctx.push(c));
+        for (const weave of weaves) {
+            weave.ideas.forEach(i => groups.idea.push(i));
+            weave.designs.forEach(d => groups.design.push(d));
+            weave.plans.forEach(p => groups.plan.push(p));
+            weave.contexts.forEach(c => groups.ctx.push(c));
         }
         return Object.entries(groups)
             .filter(([, docs]) => docs.length > 0)
@@ -116,15 +115,14 @@ export class LoomTreeProvider implements vscode.TreeDataProvider<TreeNode> {
             ));
     }
 
-    private groupByStatus(threads: Thread[]): TreeNode[] {
+    private groupByStatus(weaves: Weave[]): TreeNode[] {
         const groups: Record<string, Document[]> = {};
         const allDocs: Document[] = [];
-        for (const thread of threads) {
-            if (thread.idea) allDocs.push(thread.idea);
-            allDocs.push(thread.design);
-            thread.supportingDesigns.forEach(d => allDocs.push(d));
-            thread.plans.forEach(p => allDocs.push(p));
-            thread.contexts.forEach(c => allDocs.push(c));
+        for (const weave of weaves) {
+            weave.ideas.forEach(i => allDocs.push(i));
+            weave.designs.forEach(d => allDocs.push(d));
+            weave.plans.forEach(p => allDocs.push(p));
+            weave.contexts.forEach(c => allDocs.push(c));
         }
         for (const doc of allDocs) {
             if (!groups[doc.status]) groups[doc.status] = [];
@@ -135,13 +133,14 @@ export class LoomTreeProvider implements vscode.TreeDataProvider<TreeNode> {
         );
     }
 
-    private groupByRelease(threads: Thread[]): TreeNode[] {
+    private groupByRelease(weaves: Weave[]): TreeNode[] {
         const groups: Record<string, Document[]> = {};
-        for (const thread of threads) {
-            const release = (thread.design as any).target_release || 'unspecified';
+        for (const weave of weaves) {
+            const primaryDesign = weave.designs[0];
+            const release = (primaryDesign as any)?.target_release || 'unspecified';
             if (!groups[release]) groups[release] = [];
-            groups[release].push(thread.design);
-            thread.plans.forEach(p => groups[release].push(p));
+            if (primaryDesign) groups[release].push(primaryDesign);
+            weave.plans.forEach(p => groups[release].push(p));
         }
         return Object.entries(groups).map(([release, docs]) =>
             this.createSectionNode(release === 'unspecified' ? 'No Release' : `v${release}`,
@@ -155,48 +154,55 @@ export class LoomTreeProvider implements vscode.TreeDataProvider<TreeNode> {
         return node;
     }
 
-    private createThreadNode(thread: Thread): TreeNode {
-        const status = getThreadStatus(thread);
-        const node = new vscode.TreeItem(thread.id, vscode.TreeItemCollapsibleState.Collapsed);
+    private createWeaveNode(weave: Weave): TreeNode {
+        const status = getWeaveStatus(weave);
+        const node = new vscode.TreeItem(weave.id, vscode.TreeItemCollapsibleState.Collapsed);
         node.description = status;
-        node.iconPath = getThreadIcon(status);
-        node.contextValue = 'thread';
-        node.tooltip = `${thread.design.title} (v${thread.design.version})`;
+        node.iconPath = getWeaveIcon(status);
+        node.contextValue = 'weave';
+        const primaryDesign = weave.designs[0];
+        node.tooltip = primaryDesign ? `${primaryDesign.title} (v${primaryDesign.version})` : weave.id;
 
         return {
             ...node,
-            threadId: thread.id,
-            children: this.getThreadChildren(thread),
+            weaveId: weave.id,
+            children: this.getWeaveChildren(weave),
         };
     }
 
-    private getThreadChildren(thread: Thread): TreeNode[] {
+    private getWeaveChildren(weave: Weave): TreeNode[] {
         const children: TreeNode[] = [];
 
-        children.push(this.createDocumentNode(thread.design, 'primary-design'));
-
-        if (thread.supportingDesigns.length > 0) {
-            children.push(this.createSectionNode(
-                'Supporting Designs',
-                thread.supportingDesigns.map(d => this.createDocumentNode(d, 'design'))
-            ));
+        if (weave.designs.length > 0) {
+            const primaryDesign = weave.designs[0];
+            children.push(this.createDocumentNode(primaryDesign, 'primary-design'));
+            
+            if (weave.designs.length > 1) {
+                children.push(this.createSectionNode(
+                    'Supporting Designs',
+                    weave.designs.slice(1).map(d => this.createDocumentNode(d, 'design'))
+                ));
+            }
         }
 
-        if (thread.plans.length > 0) {
+        if (weave.plans.length > 0) {
             children.push(this.createSectionNode(
                 'Plans',
-                thread.plans.map(p => this.createPlanNode(p))
+                weave.plans.map(p => this.createPlanNode(p))
             ));
         }
 
-        if (thread.idea) {
-            children.push(this.createDocumentNode(thread.idea, 'idea'));
+        if (weave.ideas.length > 0) {
+            children.push(this.createSectionNode(
+                'Ideas',
+                weave.ideas.map(i => this.createDocumentNode(i, 'idea'))
+            ));
         }
 
-        if (thread.contexts.length > 0) {
+        if (weave.contexts.length > 0) {
             children.push(this.createSectionNode(
                 'Contexts',
-                thread.contexts.map(c => this.createDocumentNode(c, 'ctx'))
+                weave.contexts.map(c => this.createDocumentNode(c, 'ctx'))
             ));
         }
 

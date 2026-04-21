@@ -7,10 +7,9 @@ import { generatePermanentId } from '../../core/dist';
 import { createBaseFrontmatter } from '../../core/dist';
 import { generateDesignBody } from '../../core/dist';
 import { DesignDoc, IdeaDoc } from '../../core/dist';
-import { getPrimaryDesign } from '../../core/dist/entities/thread';
 
 export interface WeaveDesignInput {
-    threadId: string;
+    weaveId: string;
     title?: string;
 }
 
@@ -29,12 +28,12 @@ interface IdeaInfo {
     content: string;
 }
 
-async function findIdeaFile(threadPath: string, deps: WeaveDesignDeps): Promise<IdeaInfo | null> {
-    const entries = await deps.fs.readdir(threadPath, { withFileTypes: true });
+async function findIdeaFile(weavePath: string, deps: WeaveDesignDeps): Promise<IdeaInfo | null> {
+    const entries = await deps.fs.readdir(weavePath, { withFileTypes: true });
     for (const entry of entries) {
         if (!entry.isFile() || !entry.name.endsWith('-idea.md')) continue;
         
-        const ideaPath = path.join(threadPath, entry.name);
+        const ideaPath = path.join(weavePath, entry.name);
         const content = await deps.fs.readFile(ideaPath, 'utf8');
         const idMatch = content.match(/^id:\s*["']?(.+?)["']?\s*$/m);
         const titleMatch = content.match(/^title:\s*["']?(.+?)["']?\s*$/m);
@@ -53,7 +52,7 @@ async function findIdeaFile(threadPath: string, deps: WeaveDesignDeps): Promise<
 
 async function finalizeIdea(
     ideaPath: string,
-    threadPath: string,
+    weavePath: string,
     deps: WeaveDesignDeps
 ): Promise<{ newId: string; title: string }> {
     const idea = await deps.loadDoc(ideaPath) as IdeaDoc;
@@ -63,7 +62,7 @@ async function finalizeIdea(
     }
     
     const existingIds = new Set<string>();
-    const entries = await deps.fs.readdir(threadPath);
+    const entries = await deps.fs.readdir(weavePath);
     for (const entry of entries) {
         if (entry.endsWith('.md')) {
             existingIds.add(entry.replace('.md', ''));
@@ -80,7 +79,7 @@ async function finalizeIdea(
         updated: new Date().toISOString().split('T')[0],
     };
     
-    const newPath = path.join(threadPath, `${permanentId}.md`);
+    const newPath = path.join(weavePath, `${permanentId}.md`);
     await deps.saveDoc(updatedIdea, newPath);
     await deps.fs.remove(ideaPath);
     
@@ -92,14 +91,14 @@ export async function weaveDesign(
     deps: WeaveDesignDeps
 ): Promise<{ id: string; filePath: string; autoFinalized: boolean }> {
     const loomRoot = deps.getActiveLoomRoot();
-    const threadPath = path.join(loomRoot, 'threads', input.threadId);
+    const weavePath = path.join(loomRoot, 'weaves', input.weaveId);
     
-    await deps.fs.ensureDir(threadPath);
+    await deps.fs.ensureDir(weavePath);
     
-    const idea = await findIdeaFile(threadPath, deps);
+    const idea = await findIdeaFile(weavePath, deps);
     
     let parentId: string | null = null;
-    let designTitle = input.title || input.threadId;
+    let designTitle = input.title || input.weaveId;
     let autoFinalized = false;
     
     if (idea) {
@@ -107,7 +106,7 @@ export async function weaveDesign(
         let ideaTitle = idea.title;
         
         if (ideaId.startsWith('new-')) {
-            const finalized = await finalizeIdea(idea.filePath, threadPath, deps);
+            const finalized = await finalizeIdea(idea.filePath, weavePath, deps);
             ideaId = finalized.newId;
             ideaTitle = finalized.title;
             autoFinalized = true;
@@ -118,7 +117,7 @@ export async function weaveDesign(
     }
     
     const existingIds = new Set<string>();
-    const entries = await deps.fs.readdir(threadPath);
+    const entries = await deps.fs.readdir(weavePath);
     for (const entry of entries) {
         if (entry.endsWith('.md')) {
             existingIds.add(entry.replace('.md', ''));
@@ -136,7 +135,7 @@ export async function weaveDesign(
         content,
     } as DesignDoc;
     
-    const filePath = path.join(threadPath, `${permanentId}.md`);
+    const filePath = path.join(weavePath, `${permanentId}.md`);
     await deps.saveDoc(doc, filePath);
     
     return { id: permanentId, filePath, autoFinalized };

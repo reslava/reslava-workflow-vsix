@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 export const Icons = {
     // Activity & View
     loom: 'loom',
-    thread: 'thread',
+    weave: 'weave',    
 
     // Document Types
     idea: 'idea',
@@ -20,7 +20,7 @@ export const Icons = {
 
 const CodiconMap: Readonly<Record<keyof typeof Icons, string>> = {
     loom: 'graph',
-    thread: 'project',
+    weave: 'project',
     idea: 'lightbulb',
     design: 'symbol-structure',
     plan: 'checklist',
@@ -61,12 +61,12 @@ export function getDocumentIcon(type: string): ReturnType<typeof icon> {
 /**
  * Returns the appropriate icon for a thread status.
  */
-export function getThreadIcon(status: string): ReturnType<typeof icon> {
+export function getWeaveIcon(status: string): ReturnType<typeof icon> {
     switch (status) {
         case 'IMPLEMENTING': return new vscode.ThemeIcon('sync~spin');
         case 'DONE':         return new vscode.ThemeIcon('pass-filled');
         case 'CANCELLED':    return new vscode.ThemeIcon('error');
-        default:             return icon(Icons.thread);
+        default:             return icon(Icons.weave);
     }
 }
 

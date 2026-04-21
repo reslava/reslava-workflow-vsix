@@ -68,14 +68,15 @@ export function getActiveLoomRoot(workspaceRoot?: string): string {
 }
 
 /**
- * Resolves the absolute path to a specific thread.
+ * Resolves the absolute path to a specific weave.
  *
- * @param loomRoot - The absolute path to the loom root.
- * @param threadId - The thread identifier.
- * @returns The absolute path to the thread directory.
+ * @param weaveId - The weave identifier.
+ * @param workspaceRoot - Optional workspace root (used by VS Code extension).
+ * @returns The absolute path to the weave directory.
  */
-export function resolveThreadPath(loomRoot: string, threadId: string): string {
-    return path.join(loomRoot, 'threads', threadId);
+export function resolveWeavePath(weaveId: string, workspaceRoot?: string): string {
+    const loomRoot = getActiveLoomRoot(workspaceRoot);
+    return path.join(loomRoot, 'weaves', weaveId);
 }
 
 /**

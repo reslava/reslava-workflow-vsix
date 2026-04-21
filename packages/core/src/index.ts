@@ -10,7 +10,7 @@ export { IdeaDoc, IdeaStatus } from './entities/idea';
 export { DesignDoc, DesignStatus } from './entities/design';
 export { PlanDoc, PlanStatus, PlanStep } from './entities/plan';
 export { CtxDoc, CtxStatus } from './entities/ctx';
-export { Thread, ThreadStatus, ThreadPhase } from './entities/thread';
+export { Weave, WeaveStatus, WeavePhase } from './entities/weave';
 export { LoomState, LoomMode } from './entities/state';
 
 // ============================================================================
@@ -32,9 +32,9 @@ export { planReducer } from './reducers/planReducer';
 // Core Utilities
 // ============================================================================
 export { applyEvent } from './applyEvent';
-export { getThreadStatus, getThreadPhase, isPlanStale, getStalePlans } from './derived';
+export { getWeaveStatus, getWeavePhase, isPlanStale, getStalePlans } from './derived';
 export { createBaseFrontmatter, serializeFrontmatter } from './frontmatterUtils';
-export { toKebabCaseId, ensureUniqueId, generateTempId, generatePermanentId, generatePlanId } from './idUtils';
+export { toKebabCaseId, ensureUniqueId, generateTempId, generatePermanentId } from './idUtils';
 export { ConfigRegistry } from './registry';
 export { parseStepsTable, generateStepsTable, updateStepsTableInContent } from './planTableUtils';
 export { isStepBlocked, findNextStep } from './planUtils';
@@ -44,17 +44,16 @@ export {
     getDanglingChildIds,
     validateDesignRole,
     validateStepBlockers,
-    validateSinglePrimaryDesign,
     ValidationIssue
 } from './validation';
 
 // ============================================================================
 // Filters
 // ============================================================================
-export { filterThreadsByStatus, filterThreadsByPhase, filterThreadsById } from './filters/threadFilters';
+export { filterWeavesByStatus, filterWeavesByPhase, filterWeavesById } from './filters/weaveFilters';
 export { filterDocumentsByType, filterDocumentsByStatus, filterDocumentsByTitle } from './filters/documentFilters';
 export { filterPlansByStaleness, filterPlansByTargetVersion, filterPlansWithBlockedSteps } from './filters/planFilters';
-export { sortThreadsById, sortDocumentsByCreated, sortDocumentsByTitle } from './filters/sorting';
+export { sortWeavesById, sortDocumentsByCreated, sortDocumentsByTitle } from './filters/sorting';
 
 // ============================================================================
 // Body Generators

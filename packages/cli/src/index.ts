@@ -144,21 +144,21 @@ const weaveCmd = program
 weaveCmd
     .command('idea <title>')
     .description('Create a new idea document')
-    .option('--thread <name>', 'Place the idea in a specific thread folder')
+    .option('--weave <name>', 'Place the idea in a specific weave folder')
     .action((title, options) => weaveIdeaCommand(title, options));
 
 weaveCmd
     .command('design <thread-id>')
     .description('Create a new design document from an existing idea')
     .option('--title <title>', 'Custom title for the design')
-    .action((threadId, options) => weaveDesignCommand(threadId, options));
+    .action((weaveId, options) => weaveDesignCommand(weaveId, options));
 
 weaveCmd
     .command('plan <thread-id>')
     .description('Create a new plan from a finalized design')
     .option('--title <title>', 'Custom title for the plan')
     .option('--goal <goal>', 'Goal description for the plan')
-    .action((threadId, options) => weavePlanCommand(threadId, options));
+    .action((weaveId, options) => weavePlanCommand(weaveId, options));
 
 // ----------------------------------------------------------------------------
 // Finalize Command

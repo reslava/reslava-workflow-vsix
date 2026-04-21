@@ -1,20 +1,19 @@
 import { getActiveLoomRoot } from '../../fs/dist';
-import { loadThread } from '../../fs/dist';
+import { loadWeave } from '../../fs/dist';
 import { buildLinkIndex } from '../../fs/dist';
 import { ConfigRegistry } from '../../core/dist/registry';
 import { LoomState, LoomMode } from '../../core/dist/entities/state';
-import { Thread, getPrimaryDesign } from '../../core/dist/entities/thread';
-import { ThreadStatus } from '../../core/dist/entities/thread';
-import { getThreadStatus } from '../../core/dist/derived';
-import { filterThreadsByStatus, filterThreadsByPhase, filterThreadsById } from '../../core/dist/filters/threadFilters';
-import { sortThreadsById } from '../../core/dist/filters/sorting';
+import { Weave, WeaveStatus } from '../../core/dist/entities/weave';
+import { getWeaveStatus } from '../../core/dist/derived';
+import { filterWeavesByStatus, filterWeavesByPhase, filterWeavesById } from '../../core/dist/filters/weaveFilters';
+import { sortWeavesById } from '../../core/dist/filters/sorting';
 import { isStepBlocked } from '../../core/dist/planUtils';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
 export interface GetStateInput {
-    threadFilter?: {
-        status?: ThreadStatus[];
+    weaveFilter?: {
+        status?: WeaveStatus[];
         phase?: string[];
         idPattern?: string;
     };
@@ -24,7 +23,7 @@ export interface GetStateInput {
 
 export interface GetStateDeps {
     getActiveLoomRoot: (wsRoot?: string) => string;
-    loadThread: (loomRoot: string, threadId: string, index?: any) => Promise<Thread | null>;
+    loadWeave: (loomRoot: string, weaveId: string, index?: any) => Promise<Weave | null>;
     buildLinkIndex: (loomRoot: string) => Promise<any>;
     registry: ConfigRegistry;
     fs: typeof fs;
@@ -39,61 +38,62 @@ export async function getState(deps: GetStateDeps, input?: GetStateInput): Promi
     const mode: LoomMode = isMono ? 'mono' : 'multi';
     const loomName = isMono ? '(local)' : (registry.getActiveLoomName() || 'unknown');
     
-    const threadsDir = path.join(loomRoot, 'threads');
-    const allThreads: Thread[] = [];
+    const weavesDir = path.join(loomRoot, 'weaves');
+    const allWeaves: Weave[] = [];
     
     const index = await deps.buildLinkIndex(loomRoot);
     
-    if (deps.fs.existsSync(threadsDir)) {
-        const entries = await deps.fs.readdir(threadsDir);
+    if (deps.fs.existsSync(weavesDir)) {
+        const entries = await deps.fs.readdir(weavesDir);
         for (const entry of entries) {
-            const threadPath = path.join(threadsDir, entry);
-            const stat = await deps.fs.stat(threadPath);
+            const weavePath = path.join(weavesDir, entry);
+            const stat = await deps.fs.stat(weavePath);
             if (stat.isDirectory() && entry !== '_archive') {
                 try {
-                    const thread = await deps.loadThread(loomRoot, entry, index);
-                    if (thread) {
-                        allThreads.push(thread);
+                    const weave = await deps.loadWeave(loomRoot, entry, index);
+                    if (weave) {
+                        allWeaves.push(weave);
                     }
                 } catch (e) {
-                    // Skip invalid threads
+                    // Skip invalid weaves
                 }
             }
         }
     }
     
-    let filteredThreads = allThreads;
-    if (input?.threadFilter) {
-        const { status, phase, idPattern } = input.threadFilter;
+    let filteredWeaves = allWeaves;
+    if (input?.weaveFilter) {
+        const { status, phase, idPattern } = input.weaveFilter;
         if (status && status.length > 0) {
-            filteredThreads = filterThreadsByStatus(filteredThreads, status);
+            filteredWeaves = filterWeavesByStatus(filteredWeaves, status);
         }
         if (phase && phase.length > 0) {
-            filteredThreads = filterThreadsByPhase(filteredThreads, phase);
+            filteredWeaves = filterWeavesByPhase(filteredWeaves, phase);
         }
         if (idPattern) {
-            filteredThreads = filterThreadsById(filteredThreads, idPattern);
+            filteredWeaves = filterWeavesById(filteredWeaves, idPattern);
         }
     }
     
     if (input?.sortBy === 'id') {
-        filteredThreads = sortThreadsById(filteredThreads, input.sortOrder !== 'desc');
+        filteredWeaves = sortWeavesById(filteredWeaves, input.sortOrder !== 'desc');
     }
     
-    const totalThreads = filteredThreads.length;
-    const activeThreads = filteredThreads.filter(t => getThreadStatus(t) === 'ACTIVE').length;
-    const implementingThreads = filteredThreads.filter(t => getThreadStatus(t) === 'IMPLEMENTING').length;
-    const doneThreads = filteredThreads.filter(t => getThreadStatus(t) === 'DONE').length;
-    const totalPlans = filteredThreads.reduce((sum, t) => sum + t.plans.length, 0);
-    const stalePlans = filteredThreads.reduce((sum, t) => {
-        const primary = getPrimaryDesign(t);
-        if (!primary) return sum;
-        return sum + t.plans.filter(p => p.design_version < primary.version).length;
+    const totalWeaves = filteredWeaves.length;
+    const activeWeaves = filteredWeaves.filter(w => getWeaveStatus(w) === 'ACTIVE').length;
+    const implementingWeaves = filteredWeaves.filter(w => getWeaveStatus(w) === 'IMPLEMENTING').length;
+    const doneWeaves = filteredWeaves.filter(w => getWeaveStatus(w) === 'DONE').length;
+    const totalPlans = filteredWeaves.reduce((sum, w) => sum + w.plans.length, 0);
+    const stalePlans = filteredWeaves.reduce((sum, w) => {
+        return sum + w.plans.filter(p => {
+            const parentDesign = w.designs.find(d => d.id === p.parent_id);
+            return parentDesign ? p.design_version < parentDesign.version : false;
+        }).length;
     }, 0);
     
     let blockedSteps = 0;
-    for (const thread of filteredThreads) {
-        for (const plan of thread.plans) {
+    for (const weave of filteredWeaves) {
+        for (const plan of weave.plans) {
             if (!plan.steps) continue;
             for (const step of plan.steps) {
                 if (!step.done && isStepBlocked(step, plan, index)) {
@@ -107,14 +107,14 @@ export async function getState(deps: GetStateDeps, input?: GetStateInput): Promi
         loomRoot,
         mode,
         loomName,
-        threads: filteredThreads,
+        weaves: filteredWeaves,
         index,
         generatedAt: new Date().toISOString(),
         summary: {
-            totalThreads,
-            activeThreads,
-            implementingThreads,
-            doneThreads,
+            totalWeaves,
+            activeWeaves,
+            implementingWeaves,
+            doneWeaves,
             totalPlans,
             stalePlans,
             blockedSteps,

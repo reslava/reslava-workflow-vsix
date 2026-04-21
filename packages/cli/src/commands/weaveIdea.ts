@@ -1,19 +1,34 @@
 import chalk from 'chalk';
-import { weaveIdea } from '../../../app/dist';
-import { getActiveLoomRoot, saveDoc } from '../../../fs/dist';
 import * as fs from 'fs-extra';
+import * as path from 'path';
+import { getActiveLoomRoot } from '../../../fs/dist';
+import { saveDoc } from '../../../fs/dist';
+import { generateTempId, toKebabCaseId } from '../../../core/dist';
+import { createBaseFrontmatter } from '../../../core/dist';
+import { generateIdeaBody } from '../../../core/dist';
+import { IdeaDoc } from '../../../core/dist';
 
-export async function weaveIdeaCommand(title: string, options: { thread?: string }): Promise<void> {
-    try {
-        const result = await weaveIdea(
-            { title, thread: options.thread },
-            { getActiveLoomRoot, saveDoc, fs }
-        );
-        console.log(chalk.green(`🧵 Idea woven at ${result.filePath}`));
-        console.log(chalk.gray(`   Temporary ID: ${result.tempId}`));
-        console.log(chalk.gray(`   Run 'loom finalize ${result.tempId}' when the title is final.`));
-    } catch (e: any) {
-        console.error(chalk.red(`❌ ${e.message}`));
-        process.exit(1);
-    }
+export async function weaveIdeaCommand(title: string, options: { weave?: string }): Promise<void> {
+    const loomRoot = getActiveLoomRoot();
+    const weavesDir = path.join(loomRoot, 'weaves');
+    const weaveName = options.weave || toKebabCaseId(title);
+    const weavePath = path.join(weavesDir, weaveName);
+
+    await fs.ensureDir(weavePath);
+
+    const tempId = generateTempId('idea');
+    const frontmatter = createBaseFrontmatter('idea', tempId, title);
+    const content = generateIdeaBody(title);
+
+    const doc: IdeaDoc = {
+        ...frontmatter,
+        content,
+    } as IdeaDoc;
+
+    const filePath = path.join(weavePath, `${tempId}.md`);
+    await saveDoc(doc, filePath);
+
+    console.log(chalk.green(`🧵 Idea woven at ${filePath}`));
+    console.log(chalk.gray(`   Temporary ID: ${tempId}`));
+    console.log(chalk.gray(`   Run 'loom finalize ${tempId}' when the title is final.`));
 }

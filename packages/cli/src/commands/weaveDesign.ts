@@ -1,12 +1,12 @@
 import chalk from 'chalk';
-import { weaveDesign } from '../../../app/dist';
+import { weaveDesign } from '../../../app/dist/weaveDesign';
 import { getActiveLoomRoot, saveDoc, loadDoc } from '../../../fs/dist';
 import * as fs from 'fs-extra';
 
-export async function weaveDesignCommand(threadId: string, options: { title?: string }): Promise<void> {
+export async function weaveDesignCommand(weaveId: string, options: { title?: string }): Promise<void> {
     try {
         const result = await weaveDesign(
-            { threadId, title: options.title },
+            { weaveId, title: options.title },
             { getActiveLoomRoot, saveDoc, loadDoc, fs }
         );
         if (result.autoFinalized) {

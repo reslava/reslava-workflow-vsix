@@ -11,20 +11,20 @@ interface ValidateOptions {
     verbose?: boolean;
 }
 
-export async function validateCommand(threadId?: string, options?: ValidateOptions): Promise<void> {
+export async function validateCommand(weaveId?: string, options?: ValidateOptions): Promise<void> {
     try {
         const loomRoot = getActiveLoomRoot();
         const result = await validate(
-            { threadId, all: options?.all, verbose: options?.verbose },
+            { weaveId, all: options?.all, verbose: options?.verbose },
             { getActiveLoomRoot, buildLinkIndex, loadDoc, fs, loomRoot }
         );
 
         if (result.results.length === 1) {
             const r = result.results[0];
             if (r.issues.length === 0) {
-                console.log(chalk.green(`✅ Thread '${r.id}' is valid`));
+                console.log(chalk.green(`✅ Weave '${r.id}' is valid`));
             } else {
-                console.log(chalk.red(`❌ Thread '${r.id}' has issues:`));
+                console.log(chalk.red(`❌ Weave '${r.id}' has issues:`));
                 r.issues.forEach((i: string) => console.log(`   - ${i}`));
             }
             process.exit(r.issues.length > 0 ? 1 : 0);

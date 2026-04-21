@@ -1,15 +1,15 @@
 import chalk from 'chalk';
 import { summarise } from '../../../app/dist/summarise';
-import { loadThread } from '../../../fs/dist';
+import { loadWeave } from '../../../fs/dist';
 import { getActiveLoomRoot } from '../../../fs/dist';
 import * as fs from 'fs-extra';
 
-export async function summariseCommand(threadId: string, options: { force?: boolean }): Promise<void> {
+export async function summariseCommand(weaveId: string, options: { force?: boolean }): Promise<void> {
     try {
         const loomRoot = getActiveLoomRoot();
         const result = await summarise(
-            { threadId, force: options.force },
-            { loadThread, getActiveLoomRoot, fs, loomRoot }
+            { weaveId, force: options.force },
+            { loadWeave, getActiveLoomRoot, fs, loomRoot }
         );
 
         if (result.generated) {

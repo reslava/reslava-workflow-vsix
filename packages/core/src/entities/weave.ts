@@ -4,10 +4,10 @@ import { PlanDoc } from './plan';
 import { CtxDoc } from './ctx';
 import { Document } from './document';
 
-export type ThreadStatus = 'CANCELLED' | 'IMPLEMENTING' | 'ACTIVE' | 'DONE' | 'BLOCKED';
-export type ThreadPhase = 'ideating' | 'designing' | 'planning' | 'implementing';
+export type WeaveStatus = 'CANCELLED' | 'IMPLEMENTING' | 'ACTIVE' | 'DONE' | 'BLOCKED';
+export type WeavePhase = 'ideating' | 'designing' | 'planning' | 'implementing';
 
-export interface Thread {
+export interface Weave {
     id: string;
     ideas: IdeaDoc[];
     designs: DesignDoc[];

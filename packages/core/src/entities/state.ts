@@ -1,4 +1,4 @@
-import { Thread } from './thread';
+import { Weave } from './weave';
 import { LinkIndex } from '../linkIndex';
 
 export type LoomMode = 'mono' | 'multi';
@@ -13,8 +13,8 @@ export interface LoomState {
     /** The name of the active loom (for multi‑loom) or '(local)' for mono‑loom. */
     loomName: string;
     
-    /** All threads in the active loom. */
-    threads: Thread[];
+    /** All weaves in the active loom. */
+    weaves: Weave[];
     
     /** The link index built during state generation. */
     index: LinkIndex;
@@ -24,10 +24,10 @@ export interface LoomState {
     
     /** Summary statistics. */
     summary: {
-        totalThreads: number;
-        activeThreads: number;
-        implementingThreads: number;
-        doneThreads: number;
+        totalWeaves: number;
+        activeWeaves: number;
+        implementingWeaves: number;
+        doneWeaves: number;
         totalPlans: number;
         stalePlans: number;
         blockedSteps: number;

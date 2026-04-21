@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { weavePlan } from '@reslava-loom/app/dist/weavePlan';
-import { loadThread, saveDoc } from '@reslava-loom/fs/dist';
+import { loadWeave, saveDoc } from '@reslava-loom/fs/dist';
 import * as fs from 'fs-extra';
 import { LoomTreeProvider } from '../tree/treeProvider';
 
@@ -12,11 +12,11 @@ export async function weavePlanCommand(treeProvider: LoomTreeProvider): Promise<
     }
 
     // Get thread ID from user
-    const threadId = await vscode.window.showInputBox({
+    const weaveId = await vscode.window.showInputBox({
         prompt: 'Thread ID',
         placeHolder: 'e.g., payment-system',
     });
-    if (!threadId) return;
+    if (!weaveId) return;
 
     // Optional custom title
     const customTitle = await vscode.window.showInputBox({
@@ -32,10 +32,10 @@ export async function weavePlanCommand(treeProvider: LoomTreeProvider): Promise<
 
     try {
         const result = await weavePlan(
-            { threadId, title: customTitle || undefined, goal: goal || undefined },
+            { weaveId, title: customTitle || undefined, goal: goal || undefined },
             {
                 loomRoot: workspaceRoot,
-                loadThread,
+                loadWeave,
                 saveDoc,
                 fs,
             }

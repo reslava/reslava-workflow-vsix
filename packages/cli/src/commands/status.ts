@@ -1,16 +1,15 @@
 import chalk from 'chalk';
 import { getState, GetStateInput } from '../../../app/dist';
-import { getActiveLoomRoot, loadThread, buildLinkIndex } from '../../../fs/dist';
+import { getActiveLoomRoot, loadWeave, buildLinkIndex } from '../../../fs/dist';
 import { ConfigRegistry } from '../../../core/dist';
 import * as fs from 'fs-extra';
-import { Thread } from '../../../core/dist';
-import { getThreadStatus, getThreadPhase } from '../../../core/dist';
+import { Weave } from '../../../core/dist';
+import { getWeaveStatus, getWeavePhase } from '../../../core/dist';
 import { PlanDoc } from '../../../core/dist';
 import { LinkIndex } from '../../../core/dist';
 import { buildLinkIndex as buildIndex } from '../../../fs/dist';
-import { ThreadStatus } from '../../../core/dist';
+import { WeaveStatus } from '../../../core/dist';
 import { isStepBlocked, findNextStep } from '../../../core/dist';
-import { getPrimaryDesign } from '../../../core/dist/entities/thread';
 
 function colorStatus(status: string): string {
     switch (status) {
@@ -22,10 +21,10 @@ function colorStatus(status: string): string {
     }
 }
 
-function parseFilterFlag(filterStr?: string): GetStateInput['threadFilter'] | undefined {
+function parseFilterFlag(filterStr?: string): GetStateInput['weaveFilter'] | undefined {
     if (!filterStr) return undefined;
     
-    const filter: GetStateInput['threadFilter'] = {};
+    const filter: GetStateInput['weaveFilter'] = {};
     const parts = filterStr.split(',');
     
     for (const part of parts) {
@@ -34,7 +33,7 @@ function parseFilterFlag(filterStr?: string): GetStateInput['threadFilter'] | un
         
         switch (key.trim()) {
             case 'status':
-                filter.status = value.split('|').map(s => s.trim()) as ThreadStatus[];
+                filter.status = value.split('|').map(s => s.trim()) as WeaveStatus[];
                 break;
             case 'phase':
                 filter.phase = value.split('|').map(s => s.trim());
@@ -61,19 +60,19 @@ function parseSortOrder(sortStr?: string): GetStateInput['sortOrder'] {
 }
 
 export async function statusCommand(
-    threadId?: string,
+    weaveId?: string,
     options?: { verbose?: boolean; json?: boolean; tokens?: boolean; filter?: string; sort?: string }
 ): Promise<void> {
     try {
         const registry = new ConfigRegistry();
         
-        const threadFilter = parseFilterFlag(options?.filter);
+        const weaveFilter = parseFilterFlag(options?.filter);
         const sortBy = parseSortFlag(options?.sort);
         const sortOrder = parseSortOrder(options?.sort);
         
         const state = await getState(
-            { getActiveLoomRoot, loadThread, buildLinkIndex, registry, fs },
-            { threadFilter, sortBy, sortOrder }
+            { getActiveLoomRoot, loadWeave, buildLinkIndex, registry, fs },
+            { weaveFilter, sortBy, sortOrder }
         );
 
         if (options?.json) {
@@ -81,26 +80,27 @@ export async function statusCommand(
             return;
         }
 
-        if (threadId) {
-            const thread = state.threads.find(t => t.id === threadId);
-            if (!thread) {
-                console.error(chalk.red(`❌ Thread '${threadId}' not found.`));
+        if (weaveId) {
+            const weave = state.weaves.find(w => w.id === weaveId);
+            if (!weave) {
+                console.error(chalk.red(`❌ Weave '${weaveId}' not found.`));
                 process.exit(1);
             }
 
-            const threadStatus = getThreadStatus(thread);
-            const phase = getThreadPhase(thread);
-            const primaryDesign = getPrimaryDesign(thread);
+            const weaveStatus = getWeaveStatus(weave);
+            const phase = getWeavePhase(weave);
+            const designCount = weave.designs.length;
+            const primaryDesign = weave.designs[0];
             const designTitle = primaryDesign?.title || 'No design';
             const designVersion = primaryDesign?.version || 0;
 
-            console.log(chalk.bold(`\n🧵 Thread: ${thread.id}`));
-            console.log(`   Status: ${colorStatus(threadStatus)}`);
+            console.log(chalk.bold(`\n🧵 Weave: ${weave.id}`));
+            console.log(`   Status: ${colorStatus(weaveStatus)}`);
             console.log(`   Phase:  ${phase}`);
-            console.log(`   Design: ${designTitle} (v${designVersion})`);
-            console.log(`   Plans:  ${thread.plans.length} (${thread.plans.filter(p => p.status === 'done').length} done)`);
+            console.log(`   Designs: ${designCount} (primary: ${designTitle} v${designVersion})`);
+            console.log(`   Plans:  ${weave.plans.length} (${weave.plans.filter(p => p.status === 'done').length} done)`);
 
-            const activePlan = thread.plans.find(
+            const activePlan = weave.plans.find(
                 p => p.status === 'implementing' || p.status === 'active'
             );
 
@@ -155,7 +155,7 @@ export async function statusCommand(
             return;
         }
 
-        // List all threads
+        // List all weaves
         console.log(chalk.bold(`\n🧵 Loom: ${state.loomName} (${state.mode})`));
         if (options?.filter) {
             console.log(chalk.gray(`   Filter: ${options.filter}`));
@@ -165,14 +165,14 @@ export async function statusCommand(
         }
         console.log('');
         
-        if (state.threads.length === 0) {
-            console.log(chalk.yellow('No threads found matching the criteria.'));
+        if (state.weaves.length === 0) {
+            console.log(chalk.yellow('No weaves found matching the criteria.'));
             return;
         }
 
-        for (const t of state.threads) {
-            const threadStatus = getThreadStatus(t);
-            console.log(`  ${t.id.padEnd(25)} ${colorStatus(threadStatus)}`);
+        for (const w of state.weaves) {
+            const weaveStatus = getWeaveStatus(w);
+            console.log(`  ${w.id.padEnd(25)} ${colorStatus(weaveStatus)}`);
         }
     } catch (e: any) {
         console.error(chalk.red(`❌ ${e.message}`));

@@ -48,10 +48,10 @@ export function generatePermanentId(title: string, type: string, existingIds: Se
 
 /**
  * Generates the next available plan ID for a thread.
- * Format: {threadId}-plan-{###}
+ * Format: {weaveId}-plan-{###}
  */
-export function generatePlanId(threadId: string, existingPlanIds: string[]): string {
-    const prefix = `${threadId}-plan-`;
+export function generatePlanId(weaveId: string, existingPlanIds: string[]): string {
+    const prefix = `${weaveId}-plan-`;
     const numbers = existingPlanIds
         .map(p => p.match(/-plan-(\d+)$/)?.[1])
         .filter(Boolean)

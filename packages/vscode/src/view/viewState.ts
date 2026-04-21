@@ -5,7 +5,7 @@ export interface ViewState {
     textFilter?: string;
     statusFilter: string[];
     showArchived: boolean;
-    focusedThreadId?: string;
+    focusedweaveId?: string;
 }
 
 export const defaultViewState: ViewState = {

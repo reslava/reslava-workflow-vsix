@@ -1,18 +1,17 @@
-import { loadThread } from '../../fs/dist';
+import { loadWeave } from '../../fs/dist';
 import { getActiveLoomRoot } from '../../fs/dist';
 import { serializeFrontmatter } from '../../core/dist/frontmatterUtils';
-import { getPrimaryDesign } from '../../core/dist/entities/thread';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import matter from 'gray-matter';
 
 export interface SummariseInput {
-    threadId: string;
+    weaveId: string;
     force?: boolean;
 }
 
 export interface SummariseDeps {
-    loadThread: (loomRoot: string, threadId: string) => Promise<any>;
+    loadWeave: (loomRoot: string, weaveId: string) => Promise<any>;
     getActiveLoomRoot: (wsRoot?: string) => string;
     fs: typeof fs;
     loomRoot: string;
@@ -51,14 +50,14 @@ export async function summarise(
     input: SummariseInput,
     deps: SummariseDeps
 ): Promise<{ ctxPath: string; generated: boolean }> {
-    const thread = await deps.loadThread(deps.loomRoot, input.threadId);
-    const primaryDesign = getPrimaryDesign(thread);
+    const weave = await deps.loadWeave(deps.loomRoot, input.weaveId);
+    const primaryDesign = weave.designs[0];
     if (!primaryDesign) {
-        throw new Error(`Thread '${input.threadId}' has no design document.`);
+        throw new Error(`Weave '${input.weaveId}' has no design document.`);
     }
 
     const loomRoot = deps.getActiveLoomRoot(deps.loomRoot);
-    const ctxPath = path.join(loomRoot, 'threads', input.threadId, `${input.threadId}-ctx.md`);
+    const ctxPath = path.join(loomRoot, 'weaves', input.weaveId, `${input.weaveId}-ctx.md`);
 
     if (!input.force && deps.fs.existsSync(ctxPath)) {
         const existing = matter.read(ctxPath);
@@ -76,7 +75,7 @@ export async function summarise(
     const now = new Date().toISOString();
     const summaryFrontmatter = {
         type: 'ctx',
-        id: `${input.threadId}-ctx`,
+        id: `${input.weaveId}-ctx`,
         title: `Context Summary — ${primaryDesign.title}`,
         status: 'active',
         created: now.split('T')[0],
@@ -102,7 +101,7 @@ ${decisions.map((d: string) => `- ${d}`).join('\n')}
 ${questions.map((q: string) => `- ${q}`).join('\n')}
 
 ## Active Plans
-${thread.plans.map((p: any) => `- ${p.id} (status: ${p.status}, progress: ${p.steps?.filter((s: any) => s.done).length || 0}/${p.steps?.length || 0} steps)`).join('\n')}
+${weave.plans.map((p: any) => `- ${p.id} (status: ${p.status}, progress: ${p.steps?.filter((s: any) => s.done).length || 0}/${p.steps?.length || 0} steps)`).join('\n')}
 
 ---
 *Generated: ${now}*

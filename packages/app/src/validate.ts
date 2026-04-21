@@ -6,7 +6,6 @@ import { LinkIndex } from '../../core/dist/linkIndex';
 import { Document } from '../../core/dist/entities/document';
 import { DesignDoc } from '../../core/dist/entities/design';
 import { PlanDoc } from '../../core/dist/entities/plan';
-import { getPrimaryDesign } from '../../core/dist/entities/thread';
 import {
     validateParentExists,
     getDanglingChildIds,
@@ -17,7 +16,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 
 export interface ValidateInput {
-    threadId?: string;
+    weaveId?: string;
     all?: boolean;
     verbose?: boolean;
 }
@@ -35,21 +34,21 @@ export interface ValidationResult {
     issues: string[];
 }
 
-async function validateThread(
-    threadId: string,
+async function validateWeave(
+    weaveId: string,
     index: LinkIndex,
     loomRoot: string,
     deps: Pick<ValidateDeps, 'loadDoc' | 'fs'>
 ): Promise<ValidationResult> {
     const issues: string[] = [];
-    const threadPath = path.join(loomRoot, 'threads', threadId);
+    const weavePath = path.join(loomRoot, 'weaves', weaveId);
     
-    if (!await deps.fs.pathExists(threadPath)) {
-        return { id: threadId, issues: ['Thread directory not found'] };
+    if (!await deps.fs.pathExists(weavePath)) {
+        return { id: weaveId, issues: ['Weave directory not found'] };
     }
 
     const docs: Document[] = [];
-    const files = await findMarkdownFiles(threadPath);
+    const files = await findMarkdownFiles(weavePath);
     
     for (const file of files) {
         try {
@@ -60,12 +59,8 @@ async function validateThread(
         }
     }
 
-    const primaryDesign = docs.find(d => d.type === 'design' && (d as DesignDoc).role === 'primary') as DesignDoc;
-    
-    // Warning if multiple primary designs exist
-    const primaryDesigns = docs.filter(d => d.type === 'design' && (d as DesignDoc).role === 'primary');
-    if (primaryDesigns.length > 1) {
-        issues.push(`Warning: Thread has ${primaryDesigns.length} primary designs. Using first one.`);
+    if (docs.length === 0) {
+        return { id: weaveId, issues: ['Weave is empty'] };
     }
 
     for (const doc of docs) {
@@ -100,7 +95,7 @@ async function validateThread(
         }
     }
 
-    return { id: threadId, issues };
+    return { id: weaveId, issues };
 }
 
 export async function validate(
@@ -108,28 +103,28 @@ export async function validate(
     deps: ValidateDeps
 ): Promise<{ results: ValidationResult[]; index: LinkIndex }> {
     const loomRoot = deps.getActiveLoomRoot(deps.loomRoot);
-    const threadsDir = path.join(loomRoot, 'threads');
+    const weavesDir = path.join(loomRoot, 'weaves');
     const index = await deps.buildLinkIndex(loomRoot);
     const results: ValidationResult[] = [];
 
-    if (input.threadId) {
-        const result = await validateThread(input.threadId, index, loomRoot, deps);
+    if (input.weaveId) {
+        const result = await validateWeave(input.weaveId, index, loomRoot, deps);
         results.push(result);
     } else if (input.all) {
-        const entries = await deps.fs.readdir(threadsDir);
+        const entries = await deps.fs.readdir(weavesDir);
         for (const entry of entries) {
-            const threadPath = path.join(threadsDir, entry);
-            const stat = await deps.fs.stat(threadPath);
+            const weavePath = path.join(weavesDir, entry);
+            const stat = await deps.fs.stat(weavePath);
             if (stat.isDirectory() && entry !== '_archive') {
                 try {
-                    results.push(await validateThread(entry, index, loomRoot, deps));
+                    results.push(await validateWeave(entry, index, loomRoot, deps));
                 } catch {
-                    results.push({ id: entry, issues: ['Failed to load thread'] });
+                    results.push({ id: entry, issues: ['Failed to load weave'] });
                 }
             }
         }
     } else {
-        throw new Error('Specify a thread ID or use --all to validate all threads.');
+        throw new Error('Specify a weave ID or use --all to validate all weaves.');
     }
 
     return { results, index };

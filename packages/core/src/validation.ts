@@ -9,6 +9,9 @@ export interface ValidationIssue {
     message: string;
 }
 
+/**
+ * Checks whether a document's parent_id exists in the link index.
+ */
 export function validateParentExists(doc: Document, index: LinkIndex): boolean {
     if (!doc.parent_id) return true;
     const parent = index.documents.get(doc.parent_id);
@@ -16,6 +19,9 @@ export function validateParentExists(doc: Document, index: LinkIndex): boolean {
     return parent.exists || parent.archived;
 }
 
+/**
+ * Returns a list of child_ids that do not exist in the link index.
+ */
 export function getDanglingChildIds(doc: Document, index: LinkIndex): string[] {
     if (!doc.child_ids) return [];
     return doc.child_ids.filter(id => {
@@ -25,6 +31,9 @@ export function getDanglingChildIds(doc: Document, index: LinkIndex): string[] {
     });
 }
 
+/**
+ * Validates the role field of a design document.
+ */
 export function validateDesignRole(doc: DesignDoc): ValidationIssue | null {
     if (!doc.role) {
         return {
@@ -43,6 +52,9 @@ export function validateDesignRole(doc: DesignDoc): ValidationIssue | null {
     return null;
 }
 
+/**
+ * Validates the step blockers within a plan.
+ */
 export function validateStepBlockers(plan: PlanDoc, index: LinkIndex): ValidationIssue[] {
     const issues: ValidationIssue[] = [];
     if (!plan.steps) return issues;
@@ -51,6 +63,7 @@ export function validateStepBlockers(plan: PlanDoc, index: LinkIndex): Validatio
         if (!step.blockedBy || step.blockedBy.length === 0) continue;
         
         for (const blocker of step.blockedBy) {
+            // Internal step dependency: "Step N"
             if (blocker.startsWith('Step ')) {
                 const stepNum = parseInt(blocker.replace('Step ', ''), 10);
                 if (isNaN(stepNum) || stepNum < 1 || stepNum > plan.steps.length) {
@@ -63,6 +76,7 @@ export function validateStepBlockers(plan: PlanDoc, index: LinkIndex): Validatio
                 continue;
             }
             
+            // Cross‑plan dependency: plan ID
             if (blocker.includes('-plan-')) {
                 if (!index.documents.has(blocker)) {
                     issues.push({
@@ -74,6 +88,7 @@ export function validateStepBlockers(plan: PlanDoc, index: LinkIndex): Validatio
                 continue;
             }
             
+            // Unknown blocker format
             issues.push({
                 documentId: plan.id,
                 severity: 'warning',
@@ -83,24 +98,4 @@ export function validateStepBlockers(plan: PlanDoc, index: LinkIndex): Validatio
     }
     
     return issues;
-}
-
-export function validateSinglePrimaryDesign(docs: Document[]): ValidationIssue | null {
-    const primaryDesigns = docs.filter(d => d.type === 'design' && (d as DesignDoc).role === 'primary');
-    if (primaryDesigns.length === 0) {
-        return {
-            documentId: 'thread',
-            severity: 'error',
-            message: 'Thread has no primary design document.',
-        };
-    }
-    if (primaryDesigns.length > 1) {
-        const ids = primaryDesigns.map(d => d.id).join(', ');
-        return {
-            documentId: 'thread',
-            severity: 'error',
-            message: `Thread has multiple primary designs: ${ids}. Only one is allowed.`,
-        };
-    }
-    return null;
 }

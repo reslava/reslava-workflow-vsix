@@ -52,18 +52,18 @@ export async function cleanupTestLoom(loomPath: string): Promise<void> {
 }
 
 export async function createDesignDoc(
-    threadPath: string,
-    threadId: string,
+    weavePath: string,
+    weaveId: string,
     options?: { role?: 'primary' | 'supporting'; status?: string }
 ): Promise<void> {
-    const designPath = path.join(threadPath, `${threadId}-design.md`);
+    const designPath = path.join(weavePath, `${weaveId}-design.md`);
     const role = options?.role || 'primary';
     const status = options?.status || 'active';
 
     const frontmatter = {
         type: 'design',
-        id: `${threadId}-design`,
-        title: `${threadId} Design`,
+        id: `${weaveId}-design`,
+        title: `${weaveId} Design`,
         status,
         created: new Date().toISOString().split('T')[0],
         version: 1,
@@ -74,8 +74,7 @@ export async function createDesignDoc(
         role,
     };
 
-    // Use the body generator from the core barrel export
-    const content = generateDesignBody(`${threadId} Design`, 'User');
+    const content = generateDesignBody(`${weaveId} Design`, 'User');
     
     const frontmatterYaml = serializeFrontmatter(frontmatter);
     const output = `${frontmatterYaml}\n${content}`;

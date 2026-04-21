@@ -12,11 +12,11 @@ export async function weaveDesignCommand(treeProvider: LoomTreeProvider): Promis
     }
 
     // Get thread ID from user
-    const threadId = await vscode.window.showInputBox({
+    const weaveId = await vscode.window.showInputBox({
         prompt: 'Thread ID',
         placeHolder: 'e.g., payment-system',
     });
-    if (!threadId) return;
+    if (!weaveId) return;
 
     // Optional custom title
     const customTitle = await vscode.window.showInputBox({
@@ -26,7 +26,7 @@ export async function weaveDesignCommand(treeProvider: LoomTreeProvider): Promis
 
     try {
         const result = await weaveDesign(
-            { threadId, title: customTitle || undefined },
+            { weaveId, title: customTitle || undefined },
             {
                 getActiveLoomRoot: () => workspaceRoot,
                 saveDoc,

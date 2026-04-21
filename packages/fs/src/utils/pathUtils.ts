@@ -41,9 +41,9 @@ export async function findDocumentById(loomRoot: string, id: string): Promise<st
  * Locates the thread directory for a given thread ID.
  * Returns the absolute path if found, otherwise null.
  */
-export async function findThreadPath(loomRoot: string, threadId: string): Promise<string | null> {
+export async function findThreadPath(loomRoot: string, weaveId: string): Promise<string | null> {
     const threadsDir = path.join(loomRoot, 'threads');
-    const threadPath = path.join(threadsDir, threadId);
+    const threadPath = path.join(threadsDir, weaveId);
     
     if (await fs.pathExists(threadPath)) {
         return threadPath;
