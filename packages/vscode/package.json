@@ -57,6 +57,48 @@
         "icon": "$(checklist)"
       },
       {
+        "command": "loom.finalize",
+        "title": "Loom: Finalize Document",
+        "category": "Loom",
+        "icon": "$(check)"
+      },
+      {
+        "command": "loom.rename",
+        "title": "Loom: Rename Document",
+        "category": "Loom",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "loom.refineDesign",
+        "title": "Loom: Refine Design",
+        "category": "Loom",
+        "icon": "$(symbol-structure)"
+      },
+      {
+        "command": "loom.startPlan",
+        "title": "Loom: Start Plan",
+        "category": "Loom",
+        "icon": "$(play)"
+      },
+      {
+        "command": "loom.completeStep",
+        "title": "Loom: Complete Step",
+        "category": "Loom",
+        "icon": "$(pass)"
+      },
+      {
+        "command": "loom.validate",
+        "title": "Loom: Validate",
+        "category": "Loom",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "loom.summarise",
+        "title": "Loom: Summarise Context",
+        "category": "Loom",
+        "icon": "$(book)"
+      },
+      {
         "command": "loom.setGrouping",
         "title": "Loom: Set Grouping",
         "icon": "$(list-tree)"

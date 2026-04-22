@@ -39,7 +39,7 @@ Build a VS Code extension that provides a visual interface for Loom. The extensi
 | ✅ | 2 | Register extension activation and deactivation | `packages/vscode/src/extension.ts` | Step 1 |
 | ✅ | 3 | Implement `LoomTreeProvider` using `app/status` | `packages/vscode/src/tree/treeProvider.ts` | Step 2 |
 | ✅ | 4 | Register Tree View in `package.json` | `packages/vscode/package.json` | Step 3 |
-| 🔳 weaveIdea | 5 | Implement extension commands (delegating to `app` use‑cases) | `packages/vscode/src/commands/` | Step 3 |
+| ✅ | 5 | Implement extension commands (delegating to `app` use‑cases) | `packages/vscode/src/commands/` | Step 3 |
 | 🔳 | 6 | Add file watcher with link index incremental updates | `packages/vscode/src/watcher.ts` | Step 5 |
 | 🔳 | 7 | Add diagnostics for broken links | `packages/vscode/src/diagnostics.ts` | Step 6 |
 | 🔳 | 8 | Test in VS Code Extension Host | — | All |
@@ -276,6 +276,17 @@ export async function updateDiagnostics(collection: vscode.DiagnosticCollection)
 ## Step 8 — Test in VS Code Extension Host
 
 Press `F5` to launch Extension Development Host. Open a loom workspace and verify the tree view and commands work.
+
+---
+
+## Revision Notes
+
+*Added 2026-04-22 — post anchor-free migration*
+
+- **Step 5 commands:** `weaveIdea`, `weaveDesign`, `weavePlan` were already implemented. Remaining commands (`finalize`, `rename`, `refineDesign`, `startPlan`, `completeStep`, `validate`, `summarise`) implemented in this session. `autoFinalizedDesign` reference removed from `weavePlan` (field dropped in anchor-free migration).
+- **Step 6 watcher glob:** Code snippet in plan shows `**/threads/**/*.md` — stale. Correct glob is `**/weaves/**/*.md`. Already correct in `extension.ts`.
+- **Step 5 code snippets:** Show old imports (`../../../../app/dist`) — current code uses `@reslava-loom/app/dist` package alias.
+- **`weavePlan` anchor-free:** No longer requires a parent design. `parent_id` is null by default. Optional `--parent` flag to be added in a future plan.
 
 ---
 

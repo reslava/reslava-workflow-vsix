@@ -4,6 +4,13 @@ import { ViewStateManager } from './view/viewStateManager';
 import { weaveIdeaCommand } from './commands/weaveIdea';
 import { weaveDesignCommand } from './commands/weaveDesign';
 import { weavePlanCommand } from './commands/weavePlan';
+import { finalizeCommand } from './commands/finalize';
+import { renameCommand } from './commands/rename';
+import { refineCommand } from './commands/refine';
+import { startPlanCommand } from './commands/startPlan';
+import { completeStepCommand } from './commands/completeStep';
+import { validateCommand } from './commands/validate';
+import { summariseCommand } from './commands/summarise';
 import { showGroupingSelector } from './commands/grouping';
 import { setIconBaseUri } from './icons';
 
@@ -33,6 +40,13 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('loom.weaveIdea', () => weaveIdeaCommand(treeProvider)),
         vscode.commands.registerCommand('loom.weaveDesign', () => weaveDesignCommand(treeProvider)),
         vscode.commands.registerCommand('loom.weavePlan', () => weavePlanCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.finalize', () => finalizeCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.rename', () => renameCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.refineDesign', () => refineCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.startPlan', () => startPlanCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.completeStep', () => completeStepCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.validate', () => validateCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.summarise', () => summariseCommand(treeProvider)),
         vscode.commands.registerCommand('loom.setGrouping', () => showGroupingSelector(viewStateManager, treeProvider))
     );
 
