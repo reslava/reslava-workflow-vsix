@@ -3,11 +3,11 @@ import * as path from 'path';
 import { loadDoc, saveDoc } from '../../fs/dist';
 import { AIClient, Message, ChatDoc, IdeaDoc, createBaseFrontmatter } from '../../core/dist';
 
-export interface PromoteIdeaInput {
+export interface PromoteToIdeaInput {
     filePath: string;
 }
 
-export interface PromoteIdeaDeps {
+export interface PromoteToIdeaDeps {
     loadDoc: typeof loadDoc;
     saveDoc: typeof saveDoc;
     fs: typeof fs;
@@ -50,9 +50,9 @@ function parseTurns(content: string): Message[] {
         .filter(m => m.content.length > 0);
 }
 
-export async function promoteIdea(
-    input: PromoteIdeaInput,
-    deps: PromoteIdeaDeps
+export async function promoteToIdea(
+    input: PromoteToIdeaInput,
+    deps: PromoteToIdeaDeps
 ): Promise<{ filePath: string; title: string }> {
     const doc = await deps.loadDoc(input.filePath) as ChatDoc;
 

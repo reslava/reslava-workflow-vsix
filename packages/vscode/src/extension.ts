@@ -15,7 +15,11 @@ import { showGroupingSelector } from './commands/grouping';
 import { setTextFilter, toggleArchived } from './commands/filter';
 import { chatNewCommand } from './commands/chatNew';
 import { chatReplyCommand } from './commands/chatReply';
-import { promoteIdeaCommand } from './commands/promoteIdea';
+import { promoteToIdeaCommand } from './commands/promoteToIdea';
+import { promoteToDesignCommand } from './commands/promoteToDesign';
+import { promoteToPlanCommand } from './commands/promoteToPlan';
+import { refineIdeaCommand } from './commands/refineIdea';
+import { refinePlanCommand } from './commands/refinePlan';
 import { setIconBaseUri } from './icons';
 import { updateDiagnostics } from './diagnostics';
 
@@ -61,7 +65,11 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('loom.toggleArchived', () => toggleArchived(viewStateManager, treeProvider)),
         vscode.commands.registerCommand('loom.chatNew', (node?: TreeNode) => chatNewCommand(treeProvider, node)),
         vscode.commands.registerCommand('loom.chatReply', () => chatReplyCommand()),
-        vscode.commands.registerCommand('loom.promoteIdea', () => promoteIdeaCommand(treeProvider))
+        vscode.commands.registerCommand('loom.promoteToIdea', () => promoteToIdeaCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.promoteToDesign', () => promoteToDesignCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.promoteToPlan', () => promoteToPlanCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.refineIdea', () => refineIdeaCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.refinePlan', () => refinePlanCommand(treeProvider))
     );
 
     context.subscriptions.push(

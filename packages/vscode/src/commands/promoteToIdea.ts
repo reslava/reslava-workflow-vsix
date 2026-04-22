@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { promoteIdea } from '@reslava-loom/app/dist/promoteIdea';
+import { promoteToIdea } from '@reslava-loom/app/dist/promoteToIdea';
 import { loadDoc, saveDoc } from '@reslava-loom/fs/dist';
 import { makeAIClient } from '../ai/makeAIClient';
 import { LoomTreeProvider } from '../tree/treeProvider';
 
-export async function promoteIdeaCommand(treeProvider: LoomTreeProvider): Promise<void> {
+export async function promoteToIdeaCommand(treeProvider: LoomTreeProvider): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
         vscode.window.showErrorMessage('No active editor.');
@@ -30,10 +30,10 @@ export async function promoteIdeaCommand(treeProvider: LoomTreeProvider): Promis
         let result: { filePath: string; title: string };
 
         await vscode.window.withProgress(
-            { location: vscode.ProgressLocation.Notification, title: 'Loom: Promoting idea…', cancellable: false },
+            { location: vscode.ProgressLocation.Notification, title: 'Loom: Promoting to idea…', cancellable: false },
             async () => {
                 const fs = await import('fs-extra');
-                result = await promoteIdea(
+                result = await promoteToIdea(
                     { filePath },
                     { loadDoc, saveDoc, fs, aiClient, loomRoot }
                 );
@@ -45,6 +45,6 @@ export async function promoteIdeaCommand(treeProvider: LoomTreeProvider): Promis
         await vscode.window.showTextDocument(doc, { preview: false });
         vscode.window.showInformationMessage(`Idea created: ${result!.title}`);
     } catch (e: any) {
-        vscode.window.showErrorMessage(`Promote idea failed: ${e.message}`);
+        vscode.window.showErrorMessage(`Promote to idea failed: ${e.message}`);
     }
 }

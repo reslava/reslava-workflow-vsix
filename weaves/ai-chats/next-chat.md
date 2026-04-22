@@ -188,3 +188,5 @@ This is Chat Mode only (no JSON handshake needed) — the AI just returns struct
 **Plan created:** `weaves/ai-integration/plans/ai-promote-plan-001.md`
 
 Committing and pushing now.
+
+to get a chat to a real idea doc filled by AI we need JSON request, correct ?

@@ -29,6 +29,10 @@ export function ideaReducer(doc: IdeaDoc, event: IdeaEvent): IdeaDoc {
             assertStatus(doc.status, ['draft', 'active'], 'CANCEL_IDEA');
             return { ...doc, status: 'cancelled', updated };
 
+        case 'REFINE_IDEA':
+            assertStatus(doc.status, ['draft', 'active'], 'REFINE_IDEA');
+            return { ...doc, version: doc.version + 1, updated };
+
         default: {
             const _exhaustive: never = event;
             throw new Error(`Unknown event type: ${(event as any).type}`);

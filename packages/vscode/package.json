@@ -130,10 +130,34 @@
         "icon": "$(sparkle)"
       },
       {
-        "command": "loom.promoteIdea",
+        "command": "loom.promoteToIdea",
         "title": "Promote to Idea",
         "category": "Loom",
         "icon": "$(lightbulb)"
+      },
+      {
+        "command": "loom.promoteToDesign",
+        "title": "Promote to Design",
+        "category": "Loom",
+        "icon": "$(symbol-structure)"
+      },
+      {
+        "command": "loom.promoteToPlan",
+        "title": "Promote to Plan",
+        "category": "Loom",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "loom.refineIdea",
+        "title": "Refine Idea",
+        "category": "Loom",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "loom.refinePlan",
+        "title": "Refine Plan",
+        "category": "Loom",
+        "icon": "$(edit)"
       }
     ],
     "configuration": {
@@ -253,8 +277,28 @@
           "group": "inline@1"
         },
         {
-          "command": "loom.promoteIdea",
+          "command": "loom.promoteToIdea",
           "when": "view == loom.threads && viewItem == chat",
+          "group": "inline@2"
+        },
+        {
+          "command": "loom.promoteToDesign",
+          "when": "view == loom.threads && viewItem =~ /^(chat|idea)/",
+          "group": "inline@3"
+        },
+        {
+          "command": "loom.promoteToPlan",
+          "when": "view == loom.threads && viewItem =~ /^(chat|idea|primary-design|design)/",
+          "group": "inline@4"
+        },
+        {
+          "command": "loom.refineIdea",
+          "when": "view == loom.threads && viewItem =~ /^idea/",
+          "group": "inline@1"
+        },
+        {
+          "command": "loom.refinePlan",
+          "when": "view == loom.threads && viewItem =~ /^plan-/",
           "group": "inline@2"
         }
       ]

@@ -1,9 +1,7 @@
-import { loadWeave } from '../../fs/dist';
-import { getActiveLoomRoot } from '../../fs/dist';
-import { serializeFrontmatter } from '../../core/dist/frontmatterUtils';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import matter from 'gray-matter';
+import { serializeFrontmatter } from '../../core/dist/frontmatterUtils';
+import { AIClient, Message } from '../../core/dist';
 
 export interface SummariseInput {
     weaveId: string;
@@ -15,36 +13,27 @@ export interface SummariseDeps {
     getActiveLoomRoot: (wsRoot?: string) => string;
     fs: typeof fs;
     loomRoot: string;
+    aiClient?: AIClient;
 }
 
-function extractSection(content: string, heading: string): string {
-    const regex = new RegExp(`## ${heading}\\s*\\n([\\s\\S]*?)(?=\\n##|$)`, 'i');
-    const match = content.match(regex);
-    return match ? match[1].trim() : '(Not specified)';
-}
+const SYSTEM_PROMPT = `You are an AI assistant embedded in REslava Loom, a document-driven workflow system.
+Produce a concise context summary for this weave. The summary will be saved as a -ctx.md file that developers load to quickly understand the current state of a feature.
+Respond with plain Markdown content only (no frontmatter, no title heading) with exactly these sections:
 
-function extractDecisions(content: string): string[] {
-    const decisions: string[] = [];
-    const lines = content.split('\n');
-    for (const line of lines) {
-        if (line.includes('Decision:') || line.includes('decided')) {
-            decisions.push(line.trim());
-        }
-    }
-    return decisions.length > 0 ? decisions : ['(No explicit decisions recorded)'];
-}
+## Problem Statement
+<what problem this weave addresses>
 
-function extractQuestions(content: string): string[] {
-    const questions: string[] = [];
-    const regex = /\?\s*$/;
-    const lines = content.split('\n');
-    for (const line of lines) {
-        if (regex.test(line.trim()) && line.includes('## User:')) {
-            questions.push(line.replace('## User:', '').trim());
-        }
-    }
-    return questions.length > 0 ? questions : ['(No open questions)'];
-}
+## Context
+<background, constraints, and key motivations>
+
+## Key Decisions Made
+<bullet list of concrete decisions already locked in>
+
+## Open Questions
+<bullet list of questions still unresolved>
+
+## Active Plans
+<bullet list of plans with status and step progress>`;
 
 export async function summarise(
     input: SummariseInput,
@@ -60,17 +49,44 @@ export async function summarise(
     const ctxPath = path.join(loomRoot, 'weaves', input.weaveId, `${input.weaveId}-ctx.md`);
 
     if (!input.force && deps.fs.existsSync(ctxPath)) {
-        const existing = matter.read(ctxPath);
-        if (existing.data.source_version === primaryDesign.version) {
+        const raw = await deps.fs.readFile(ctxPath, 'utf8');
+        const sourceVersionMatch = raw.match(/^source_version:\s*(\d+)/m);
+        if (sourceVersionMatch && Number(sourceVersionMatch[1]) === primaryDesign.version) {
             return { ctxPath, generated: false };
         }
     }
 
-    const designContent = primaryDesign.content || '';
-    const goal = extractSection(designContent, 'Goal');
-    const context = extractSection(designContent, 'Context');
-    const decisions = extractDecisions(designContent);
-    const questions = extractQuestions(designContent);
+    const planLines = weave.plans.map((p: any) => {
+        const done = p.steps?.filter((s: any) => s.done).length ?? 0;
+        const total = p.steps?.length ?? 0;
+        return `- ${p.id} (${p.status}, ${done}/${total} steps)`;
+    }).join('\n') || '(none)';
+
+    const ideaLines = weave.ideas.map((i: any) => `- ${i.title} (${i.status})`).join('\n') || '(none)';
+
+    const userMessage = [
+        `Weave: ${input.weaveId}`,
+        `Primary design: ${primaryDesign.title} (v${primaryDesign.version})`,
+        '',
+        '=== Design document ===',
+        primaryDesign.content || '',
+        '',
+        '=== Ideas ===',
+        ideaLines,
+        '',
+        '=== Plans ===',
+        planLines,
+    ].join('\n');
+
+    const messages: Message[] = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userMessage },
+    ];
+
+    if (!deps.aiClient) {
+        throw new Error('No AI client configured. Set reslava-loom.ai.apiKey in VS Code settings.');
+    }
+    const summaryBody = await deps.aiClient.complete(messages);
 
     const now = new Date().toISOString();
     const summaryFrontmatter = {
@@ -86,29 +102,8 @@ export async function summarise(
         source_version: primaryDesign.version,
     };
 
-    const summaryBody = `# Design Context Summary
-
-## Problem Statement
-${goal}
-
-## Context
-${context}
-
-## Key Decisions Made
-${decisions.map((d: string) => `- ${d}`).join('\n')}
-
-## Open Questions
-${questions.map((q: string) => `- ${q}`).join('\n')}
-
-## Active Plans
-${weave.plans.map((p: any) => `- ${p.id} (status: ${p.status}, progress: ${p.steps?.filter((s: any) => s.done).length || 0}/${p.steps?.length || 0} steps)`).join('\n')}
-
----
-*Generated: ${now}*
-`;
-
     const frontmatterStr = serializeFrontmatter(summaryFrontmatter);
-    const output = `${frontmatterStr}\n${summaryBody}`;
+    const output = `${frontmatterStr}\n# Context Summary — ${primaryDesign.title}\n\n${summaryBody.trim()}\n\n---\n*Generated: ${now}*\n`;
     await deps.fs.writeFile(ctxPath, output);
 
     return { ctxPath, generated: true };
