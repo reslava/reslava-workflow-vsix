@@ -42,7 +42,7 @@ export async function findDocumentById(loomRoot: string, id: string): Promise<st
  * Returns the absolute path if found, otherwise null.
  */
 export async function findThreadPath(loomRoot: string, weaveId: string): Promise<string | null> {
-    const threadsDir = path.join(loomRoot, 'threads');
+    const threadsDir = path.join(loomRoot, 'weaves');
     const threadPath = path.join(threadsDir, weaveId);
     
     if (await fs.pathExists(threadPath)) {

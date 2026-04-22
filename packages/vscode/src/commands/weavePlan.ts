@@ -41,11 +41,7 @@ export async function weavePlanCommand(treeProvider: LoomTreeProvider): Promise<
             }
         );
 
-        if (result.autoFinalizedDesign) {
-            vscode.window.showInformationMessage(`🧵 Design auto-finalized. Plan woven: ${result.id}`);
-        } else {
-            vscode.window.showInformationMessage(`🧵 Plan woven: ${result.id}`);
-        }
+        vscode.window.showInformationMessage(`🧵 Plan woven: ${result.id}`);
         treeProvider.refresh();
     } catch (e: any) {
         vscode.window.showErrorMessage(`Failed to weave plan: ${e.message}`);

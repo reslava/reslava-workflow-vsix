@@ -47,25 +47,25 @@ async function testWeaveWorkflow() {
     const designContent = fsNative.readFileSync(designPath, 'utf8');
     assert(designContent.includes('parent_id: workflow-test-idea'), 'Design parent_id not set to idea');
 
-    console.log('  • Testing `loom weave plan` with auto‑finalize...');
+    console.log('  • Testing `loom weave plan` (anchor-free)...');
     result = runLoom('weave plan workflow-test');
     assert(result.exitCode === 0, `weave plan failed: ${result.stderr}`);
-    
-    assert(result.stdout.includes('Design auto-finalized'), 'Auto‑finalize message missing');
-    
+
     const planIdMatch = result.stdout.match(/ID: ([a-z0-9-]+)/);
     assert(planIdMatch !== null, 'Plan ID not found in output');
     const planId = planIdMatch![1];
     console.log(`    ✅ Plan created with ID: ${planId}`);
-    
+
+    // Anchor-free: design is NOT auto-finalized when a plan is created
     const updatedDesignContent = fsNative.readFileSync(designPath, 'utf8');
-    assert(updatedDesignContent.includes('status: done'), 'Design status not updated to done');
-    
+    assert(!updatedDesignContent.includes('status: done'), 'Design should not be auto-finalized by weavePlan');
+
     const planPath = path.join(weavePath, 'plans', `${planId}.md`);
     assert(fsNative.existsSync(planPath), 'Plan file not created');
-    
+
+    // Anchor-free: plan has no parent_id by default (user links manually)
     const planContent = fsNative.readFileSync(planPath, 'utf8');
-    assert(planContent.includes(`parent_id: ${designId}`), 'Plan parent_id not set to design');
+    assert(planContent.includes('parent_id: null'), 'Plan should have null parent_id in anchor-free mode');
 
     console.log('  • Verifying weave status...');
     result = runLoom('status workflow-test --verbose');

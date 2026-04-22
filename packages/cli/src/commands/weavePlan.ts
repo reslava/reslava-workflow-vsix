@@ -11,9 +11,6 @@ export async function weavePlanCommand(weaveId: string, options: { title?: strin
             { weaveId, title: options.title, goal: options.goal },
             { loadWeave, saveDoc, fs, loomRoot }
         );
-        if (result.autoFinalizedDesign) {
-            console.log(chalk.gray(`   Design auto-finalized`));
-        }
         console.log(chalk.green(`🧵 Plan woven at ${result.filePath}`));
         console.log(chalk.gray(`   ID: ${result.id}`));
     } catch (e: any) {

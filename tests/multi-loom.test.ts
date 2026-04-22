@@ -1,74 +1,111 @@
 import * as path from 'path';
-import { setupTestLoom, cleanupTestLoom, runLoom, assert } from './test-utils.ts';
+import * as os from 'os';
+import * as fs from 'fs-extra';
+import { existsSync } from 'fs';
+import { setupTestLoom, cleanupTestLoom, runLoom, assert, TEST_ROOT } from './test-utils.ts';
 
 async function testMultiLoom() {
     console.log('🧵 Running multi‑loom tests...\n');
 
-    // Generate unique names to avoid registry conflicts
     const timestamp = Date.now();
-    const testLoomName = `test-loom-${timestamp}`;
+    const loomA = `test-loom-a-${timestamp}`;
+    const loomB = `test-loom-b-${timestamp}`;
 
-    // 1. Setup a clean test environment
-    const testLoomPath = await setupTestLoom('multi-loom-suite');
-    process.chdir(testLoomPath);
+    // neutral dir: no .loom/ — required for all multi-loom commands
+    const neutralPath = TEST_ROOT;
+    await fs.ensureDir(neutralPath);
 
-    // 2. Initialize the default loom
-    console.log('  • Testing `loom init`...');
-    let result = runLoom('init --force');
-    assert(result.exitCode === 0, `loom init failed: ${result.stderr}`);
-    assert(result.stdout.includes('Loom initialized'), 'Missing success message');
-    console.log('    ✅ loom init works');
+    // paths where setup will create the looms
+    const loomAPath = path.join(os.homedir(), 'looms', loomA);
+    const loomBPath = path.join(os.homedir(), 'looms', loomB);
 
-    // 3. Create a second loom with unique name
-    console.log(`  • Testing \`loom setup ${testLoomName}\`...`);
-    result = runLoom(`setup ${testLoomName}`);
+    // --- Multi-loom commands ---
+
+    // 1. Create loom-a (auto-activated)
+    console.log(`  • Testing \`loom setup ${loomA}\`...`);
+    let result = runLoom(`setup ${loomA}`, neutralPath);
     assert(result.exitCode === 0, `loom setup failed: ${result.stderr}`);
     assert(result.stdout.includes('created and activated'), 'Missing activation message');
     console.log('    ✅ loom setup works');
 
-    // 4. Switch back to default
-    console.log('  • Testing `loom switch default`...');
-    result = runLoom('switch default');
+    // 2. Create loom-b without switching
+    console.log(`  • Testing \`loom setup ${loomB} --no-switch\`...`);
+    result = runLoom(`setup ${loomB} --no-switch`, neutralPath);
+    assert(result.exitCode === 0, `loom setup --no-switch failed: ${result.stderr}`);
+    assert(result.stdout.includes('created'), 'Missing created message');
+    console.log('    ✅ loom setup --no-switch works');
+
+    // 3. List looms — both present, loom-a active
+    console.log('  • Testing `loom list`...');
+    result = runLoom('list', neutralPath);
+    assert(result.exitCode === 0, `loom list failed: ${result.stderr}`);
+    assert(result.stdout.includes(loomA), `${loomA} missing from list`);
+    assert(result.stdout.includes(loomB), `${loomB} missing from list`);
+    assert(result.stdout.includes('★'), 'Active loom indicator missing');
+    console.log('    ✅ loom list works');
+
+    // 4. Current — loom-a is active
+    console.log('  • Testing `loom current`...');
+    result = runLoom('current', neutralPath);
+    assert(result.exitCode === 0, `loom current failed: ${result.stderr}`);
+    assert(result.stdout.includes(loomA), `Expected ${loomA} to be current`);
+    console.log('    ✅ loom current works');
+
+    // 5. Switch to loom-b
+    console.log(`  • Testing \`loom switch ${loomB}\`...`);
+    result = runLoom(`switch ${loomB}`, neutralPath);
     assert(result.exitCode === 0, `loom switch failed: ${result.stderr}`);
     assert(result.stdout.includes('Switched to loom'), 'Missing switch message');
     console.log('    ✅ loom switch works');
 
-    // 5. List looms and verify both are present
-    console.log('  • Testing `loom list`...');
-    result = runLoom('list');
-    assert(result.exitCode === 0, `loom list failed: ${result.stderr}`);
-    assert(result.stdout.includes('default'), 'default loom missing from list');
-    assert(result.stdout.includes(testLoomName), `${testLoomName} missing from list`);
-    assert(result.stdout.includes('★'), 'Active loom indicator missing');
-    console.log('    ✅ loom list works');
-
-    // 6. Check current loom
-    console.log('  • Testing `loom current`...');
-    result = runLoom('current');
+    // 6. Current — loom-b is now active
+    console.log('  • Testing `loom current` after switch...');
+    result = runLoom('current', neutralPath);
     assert(result.exitCode === 0, `loom current failed: ${result.stderr}`);
-    assert(result.stdout.includes('default'), 'Current loom not reported correctly');
-    console.log('    ✅ loom current works');
+    assert(result.stdout.includes(loomB), `Expected ${loomB} to be current`);
+    console.log('    ✅ loom current reflects switch');
 
-    // 7. Switch to a non‑existent loom (should fail)
-    console.log('  • Testing `loom switch non-existent` (expected to fail)...');
-    result = runLoom('switch does-not-exist');
-    assert(result.exitCode !== 0, 'Should have failed for non‑existent loom');
+    // 7. Switch to non-existent loom (should fail)
+    console.log('  • Testing `loom switch does-not-exist` (expected to fail)...');
+    result = runLoom('switch does-not-exist', neutralPath);
+    assert(result.exitCode !== 0, 'Should have failed for non-existent loom');
     console.log('    ✅ Correctly rejected invalid switch');
 
-    // 8. Clean up (ignore EBUSY errors on Windows)
-    try {
-        await cleanupTestLoom(testLoomPath);
-    } catch (e: any) {
-        if (e.code === 'EBUSY' || e.code === 'EPERM') {
-            console.warn('    ⚠️ Cleanup locked (ignored)');
-        } else {
-            throw e;
-        }
-    }
+    // --- Mono-loom guard ---
+
+    // 8. loom switch is rejected inside a mono-loom project
+    console.log('  • Testing `loom switch` inside mono-loom (expected to fail)...');
+    const monoLoomPath = await setupTestLoom('mono-loom-guard');
+    runLoom('init', monoLoomPath); // creates .loom/ inside
+    result = runLoom(`switch ${loomA}`, monoLoomPath);
+    assert(result.exitCode !== 0, 'Should have rejected switch inside mono-loom project');
+    console.log('    ✅ loom switch correctly blocked inside mono-loom project');
+
+    // --- loom init (mono-loom) ---
+
+    // 9. loom init creates workspace dirs
+    console.log('  • Testing `loom init`...');
+    const initPath = await setupTestLoom('mono-loom-init');
+    result = runLoom('init', initPath);
+    assert(result.exitCode === 0, `loom init failed: ${result.stderr}`);
+    assert(result.stdout.includes('initialized'), 'Missing initialized message');
+    assert(existsSync(path.join(initPath, '.loom')), '.loom dir not created');
+    assert(existsSync(path.join(initPath, 'weaves')), 'weaves dir not created');
+    assert(existsSync(path.join(initPath, 'references')), 'references dir not created');
+    console.log('    ✅ loom init creates correct directory structure');
+
+    // --- Cleanup ---
+    console.log('  • Cleaning up...');
+    await Promise.all([
+        cleanupTestLoom(monoLoomPath).catch(() => {}),
+        cleanupTestLoom(initPath).catch(() => {}),
+        fs.remove(loomAPath).catch(() => {}),
+        fs.remove(loomBPath).catch(() => {}),
+    ]);
+
     console.log('\n✨ All multi‑loom tests passed!\n');
 }
 
-// Run the tests
 testMultiLoom().catch(err => {
     console.error('❌ Test suite failed:', err.message);
     process.exit(1);
