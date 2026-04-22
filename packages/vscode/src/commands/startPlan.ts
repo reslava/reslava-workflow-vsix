@@ -1,22 +1,22 @@
 import * as vscode from 'vscode';
 import { runEvent } from '@reslava-loom/app/dist/runEvent';
 import { loadWeave, saveWeave } from '@reslava-loom/fs/dist';
-import { LoomTreeProvider } from '../tree/treeProvider';
+import { LoomTreeProvider, TreeNode } from '../tree/treeProvider';
 
-export async function startPlanCommand(treeProvider: LoomTreeProvider): Promise<void> {
+export async function startPlanCommand(treeProvider: LoomTreeProvider, node?: TreeNode): Promise<void> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceRoot) {
         vscode.window.showErrorMessage('No workspace open.');
         return;
     }
 
-    const planId = await vscode.window.showInputBox({
+    const planId = node?.doc?.id ?? await vscode.window.showInputBox({
         prompt: 'Plan ID to start',
         placeHolder: 'e.g., payment-system-plan-001',
     });
     if (!planId) return;
 
-    const weaveId = planId.split('-plan-')[0];
+    const weaveId = node?.weaveId ?? planId.split('-plan-')[0];
     if (!weaveId) {
         vscode.window.showErrorMessage(`Invalid plan ID format. Expected "{weaveId}-plan-###".`);
         return;

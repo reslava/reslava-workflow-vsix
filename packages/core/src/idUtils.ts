@@ -59,3 +59,17 @@ export function generatePlanId(weaveId: string, existingPlanIds: string[]): stri
     const next = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
     return `${prefix}${String(next).padStart(3, '0')}`;
 }
+
+/**
+ * Generates the next available chat ID for a weave.
+ * Format: {weaveId}-chat-{###}
+ */
+export function generateChatId(weaveId: string, existingChatIds: string[]): string {
+    const prefix = `${weaveId}-chat-`;
+    const numbers = existingChatIds
+        .map(id => id.match(/-chat-(\d+)$/)?.[1])
+        .filter(Boolean)
+        .map(Number);
+    const next = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+    return `${prefix}${String(next).padStart(3, '0')}`;
+}

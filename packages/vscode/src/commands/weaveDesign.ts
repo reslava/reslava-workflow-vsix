@@ -1,18 +1,17 @@
 import * as vscode from 'vscode';
 import { weaveDesign } from '@reslava-loom/app/dist/weaveDesign';
-import { getActiveLoomRoot, saveDoc, loadDoc } from '@reslava-loom/fs/dist';
+import { saveDoc, loadDoc } from '@reslava-loom/fs/dist';
 import * as fs from 'fs-extra';
-import { LoomTreeProvider } from '../tree/treeProvider';
+import { LoomTreeProvider, TreeNode } from '../tree/treeProvider';
 
-export async function weaveDesignCommand(treeProvider: LoomTreeProvider): Promise<void> {
+export async function weaveDesignCommand(treeProvider: LoomTreeProvider, node?: TreeNode): Promise<void> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceRoot) {
         vscode.window.showErrorMessage('No workspace open.');
         return;
     }
 
-    // Get thread ID from user
-    const weaveId = await vscode.window.showInputBox({
+    const weaveId = node?.weaveId ?? await vscode.window.showInputBox({
         prompt: 'Thread ID',
         placeHolder: 'e.g., payment-system',
     });

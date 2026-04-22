@@ -10,6 +10,7 @@ export { IdeaDoc, IdeaStatus } from './entities/idea';
 export { DesignDoc, DesignStatus } from './entities/design';
 export { PlanDoc, PlanStatus, PlanStep } from './entities/plan';
 export { CtxDoc, CtxStatus } from './entities/ctx';
+export { ChatDoc, ChatStatus } from './entities/chat';
 export { Weave, WeaveStatus, WeavePhase } from './entities/weave';
 export { LoomState, LoomMode } from './entities/state';
 
@@ -34,8 +35,9 @@ export { planReducer } from './reducers/planReducer';
 export { applyEvent } from './applyEvent';
 export { getWeaveStatus, getWeavePhase, isPlanStale, getStalePlans } from './derived';
 export { createBaseFrontmatter, serializeFrontmatter } from './frontmatterUtils';
-export { toKebabCaseId, ensureUniqueId, generateTempId, generatePermanentId } from './idUtils';
+export { toKebabCaseId, ensureUniqueId, generateTempId, generatePermanentId, generatePlanId, generateChatId } from './idUtils';
 export { ConfigRegistry } from './registry';
+export { AIClient, Message } from './ai';
 export { parseStepsTable, generateStepsTable, updateStepsTableInContent } from './planTableUtils';
 export { isStepBlocked, findNextStep } from './planUtils';
 export { createEmptyIndex, LinkIndex, DocumentEntry, StepBlocker } from './linkIndex';

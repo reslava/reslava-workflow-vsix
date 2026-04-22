@@ -2,16 +2,16 @@ import * as vscode from 'vscode';
 import { completeStep } from '@reslava-loom/app/dist/completeStep';
 import { runEvent } from '@reslava-loom/app/dist/runEvent';
 import { loadWeave, saveWeave } from '@reslava-loom/fs/dist';
-import { LoomTreeProvider } from '../tree/treeProvider';
+import { LoomTreeProvider, TreeNode } from '../tree/treeProvider';
 
-export async function completeStepCommand(treeProvider: LoomTreeProvider): Promise<void> {
+export async function completeStepCommand(treeProvider: LoomTreeProvider, node?: TreeNode): Promise<void> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceRoot) {
         vscode.window.showErrorMessage('No workspace open.');
         return;
     }
 
-    const planId = await vscode.window.showInputBox({
+    const planId = node?.doc?.id ?? await vscode.window.showInputBox({
         prompt: 'Plan ID',
         placeHolder: 'e.g., payment-system-plan-001',
     });

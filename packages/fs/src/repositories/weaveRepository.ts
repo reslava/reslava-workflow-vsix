@@ -6,6 +6,7 @@ import { DesignDoc } from '../../../core/dist/entities/design';
 import { IdeaDoc } from '../../../core/dist/entities/idea';
 import { PlanDoc } from '../../../core/dist/entities/plan';
 import { CtxDoc } from '../../../core/dist/entities/ctx';
+import { ChatDoc } from '../../../core/dist/entities/chat';
 import { loadDoc, FrontmatterParseError } from '../serializers/frontmatterLoader';
 import { saveDoc } from '../serializers/frontmatterSaver';
 import { findMarkdownFiles } from '../utils/pathUtils';
@@ -55,6 +56,7 @@ export async function loadWeave(loomRoot: string, weaveId: string, index?: LinkI
     const designs = docs.filter(d => d.type === 'design') as DesignDoc[];
     const plans = docs.filter(d => d.type === 'plan') as PlanDoc[];
     const contexts = docs.filter(d => d.type === 'ctx') as CtxDoc[];
+    const chats = docs.filter(d => d.type === 'chat') as ChatDoc[];
     
     // Validation warnings (if index provided)
     if (index) {
@@ -86,6 +88,7 @@ export async function loadWeave(loomRoot: string, weaveId: string, index?: LinkI
         designs,
         plans,
         contexts,
+        chats,
         allDocs: docs,
     };
 }

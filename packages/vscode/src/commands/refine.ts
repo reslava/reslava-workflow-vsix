@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
 import { runEvent } from '@reslava-loom/app/dist/runEvent';
 import { loadWeave, saveWeave } from '@reslava-loom/fs/dist';
-import { LoomTreeProvider } from '../tree/treeProvider';
+import { LoomTreeProvider, TreeNode } from '../tree/treeProvider';
 
-export async function refineCommand(treeProvider: LoomTreeProvider): Promise<void> {
+export async function refineCommand(treeProvider: LoomTreeProvider, node?: TreeNode): Promise<void> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceRoot) {
         vscode.window.showErrorMessage('No workspace open.');
         return;
     }
 
-    const weaveId = await vscode.window.showInputBox({
+    const weaveId = node?.weaveId ?? await vscode.window.showInputBox({
         prompt: 'Weave ID to refine design',
         placeHolder: 'e.g., payment-system',
     });

@@ -2,21 +2,23 @@ import * as vscode from 'vscode';
 import { weavePlan } from '@reslava-loom/app/dist/weavePlan';
 import { loadWeave, saveDoc } from '@reslava-loom/fs/dist';
 import * as fs from 'fs-extra';
-import { LoomTreeProvider } from '../tree/treeProvider';
+import { LoomTreeProvider, TreeNode } from '../tree/treeProvider';
 
-export async function weavePlanCommand(treeProvider: LoomTreeProvider): Promise<void> {
+export async function weavePlanCommand(treeProvider: LoomTreeProvider, node?: TreeNode): Promise<void> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceRoot) {
         vscode.window.showErrorMessage('No workspace open.');
         return;
     }
 
-    // Get thread ID from user
-    const weaveId = await vscode.window.showInputBox({
+    const weaveId = node?.weaveId ?? await vscode.window.showInputBox({
         prompt: 'Thread ID',
         placeHolder: 'e.g., payment-system',
     });
     if (!weaveId) return;
+
+    // When triggered from a design node, link the plan to that design
+    const parentId = node?.doc?.id;
 
     // Optional custom title
     const customTitle = await vscode.window.showInputBox({
@@ -32,7 +34,7 @@ export async function weavePlanCommand(treeProvider: LoomTreeProvider): Promise<
 
     try {
         const result = await weavePlan(
-            { weaveId, title: customTitle || undefined, goal: goal || undefined },
+            { weaveId, title: customTitle || undefined, goal: goal || undefined, parentId },
             {
                 loomRoot: workspaceRoot,
                 loadWeave,

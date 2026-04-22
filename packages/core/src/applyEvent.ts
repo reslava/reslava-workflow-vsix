@@ -63,6 +63,7 @@ export function applyEvent(weave: Weave, event: WorkflowEvent): Weave {
     const designs = updatedDocs.filter(d => d.type === 'design') as DesignDoc[];
     const plans = updatedDocs.filter(d => d.type === 'plan') as PlanDoc[];
     const contexts = updatedDocs.filter(d => d.type === 'ctx') as any[];
+    const chats = updatedDocs.filter(d => d.type === 'chat') as any[];
 
     return {
         id: weave.id,
@@ -70,6 +71,7 @@ export function applyEvent(weave: Weave, event: WorkflowEvent): Weave {
         designs,
         plans,
         contexts,
+        chats,
         allDocs: updatedDocs,
     };
 }

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { LoomTreeProvider } from './tree/treeProvider';
+import { LoomTreeProvider, TreeNode } from './tree/treeProvider';
 import { ViewStateManager } from './view/viewStateManager';
 import { weaveIdeaCommand } from './commands/weaveIdea';
 import { weaveDesignCommand } from './commands/weaveDesign';
@@ -12,7 +12,11 @@ import { completeStepCommand } from './commands/completeStep';
 import { validateCommand } from './commands/validate';
 import { summariseCommand } from './commands/summarise';
 import { showGroupingSelector } from './commands/grouping';
+import { setTextFilter, toggleArchived } from './commands/filter';
+import { chatNewCommand } from './commands/chatNew';
+import { chatReplyCommand } from './commands/chatReply';
 import { setIconBaseUri } from './icons';
+import { updateDiagnostics } from './diagnostics';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('🧵 Loom extension activated');
@@ -22,32 +26,40 @@ export function activate(context: vscode.ExtensionContext) {
 
     const viewStateManager = new ViewStateManager(context.workspaceState);
     const treeProvider = new LoomTreeProvider(viewStateManager);
-    
+
     const treeView = vscode.window.createTreeView('loom.threads', {
         treeDataProvider: treeProvider,
         showCollapseAll: true,
     });
     context.subscriptions.push(treeView);
 
+    const diagnosticCollection = vscode.languages.createDiagnosticCollection('loom');
+    context.subscriptions.push(diagnosticCollection);
+
     function syncAndRefresh(): void {
         const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
         treeProvider.setWorkspaceRoot(root);
         treeProvider.refresh();
+        if (root) updateDiagnostics(diagnosticCollection, root);
     }
 
     context.subscriptions.push(
         vscode.commands.registerCommand('loom.refresh', syncAndRefresh),
         vscode.commands.registerCommand('loom.weaveIdea', () => weaveIdeaCommand(treeProvider)),
-        vscode.commands.registerCommand('loom.weaveDesign', () => weaveDesignCommand(treeProvider)),
-        vscode.commands.registerCommand('loom.weavePlan', () => weavePlanCommand(treeProvider)),
-        vscode.commands.registerCommand('loom.finalize', () => finalizeCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.weaveDesign', (node?: TreeNode) => weaveDesignCommand(treeProvider, node)),
+        vscode.commands.registerCommand('loom.weavePlan', (node?: TreeNode) => weavePlanCommand(treeProvider, node)),
+        vscode.commands.registerCommand('loom.finalize', (node?: TreeNode) => finalizeCommand(treeProvider, node)),
         vscode.commands.registerCommand('loom.rename', () => renameCommand(treeProvider)),
-        vscode.commands.registerCommand('loom.refineDesign', () => refineCommand(treeProvider)),
-        vscode.commands.registerCommand('loom.startPlan', () => startPlanCommand(treeProvider)),
-        vscode.commands.registerCommand('loom.completeStep', () => completeStepCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.refineDesign', (node?: TreeNode) => refineCommand(treeProvider, node)),
+        vscode.commands.registerCommand('loom.startPlan', (node?: TreeNode) => startPlanCommand(treeProvider, node)),
+        vscode.commands.registerCommand('loom.completeStep', (node?: TreeNode) => completeStepCommand(treeProvider, node)),
         vscode.commands.registerCommand('loom.validate', () => validateCommand(treeProvider)),
-        vscode.commands.registerCommand('loom.summarise', () => summariseCommand(treeProvider)),
-        vscode.commands.registerCommand('loom.setGrouping', () => showGroupingSelector(viewStateManager, treeProvider))
+        vscode.commands.registerCommand('loom.summarise', (node?: TreeNode) => summariseCommand(treeProvider, node)),
+        vscode.commands.registerCommand('loom.setGrouping', () => showGroupingSelector(viewStateManager, treeProvider)),
+        vscode.commands.registerCommand('loom.setTextFilter', () => setTextFilter(viewStateManager, treeProvider)),
+        vscode.commands.registerCommand('loom.toggleArchived', () => toggleArchived(viewStateManager, treeProvider)),
+        vscode.commands.registerCommand('loom.chatNew', (node?: TreeNode) => chatNewCommand(treeProvider, node)),
+        vscode.commands.registerCommand('loom.chatReply', () => chatReplyCommand())
     );
 
     context.subscriptions.push(

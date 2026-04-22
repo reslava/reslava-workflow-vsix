@@ -1,17 +1,17 @@
 import * as vscode from 'vscode';
 import { summarise } from '@reslava-loom/app/dist/summarise';
-import { loadWeave, getActiveLoomRoot } from '@reslava-loom/fs/dist';
+import { loadWeave } from '@reslava-loom/fs/dist';
 import * as fs from 'fs-extra';
-import { LoomTreeProvider } from '../tree/treeProvider';
+import { LoomTreeProvider, TreeNode } from '../tree/treeProvider';
 
-export async function summariseCommand(treeProvider: LoomTreeProvider): Promise<void> {
+export async function summariseCommand(treeProvider: LoomTreeProvider, node?: TreeNode): Promise<void> {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceRoot) {
         vscode.window.showErrorMessage('No workspace open.');
         return;
     }
 
-    const weaveId = await vscode.window.showInputBox({
+    const weaveId = node?.weaveId ?? await vscode.window.showInputBox({
         prompt: 'Weave ID to summarise',
         placeHolder: 'e.g., payment-system',
     });

@@ -11,6 +11,7 @@ export interface WeavePlanInput {
     weaveId: string;
     title?: string;
     goal?: string;
+    parentId?: string;
 }
 
 export interface WeavePlanDeps {
@@ -39,7 +40,7 @@ export async function weavePlan(
     const existingPlanIds = weave.plans.map((p: any) => p.id);
     const planId = generatePlanId(input.weaveId, existingPlanIds);
     
-    const baseFrontmatter = createBaseFrontmatter('plan', planId, planTitle, null); // No parent required
+    const baseFrontmatter = createBaseFrontmatter('plan', planId, planTitle, input.parentId ?? null);
     
     const doc: PlanDoc = {
         ...baseFrontmatter,

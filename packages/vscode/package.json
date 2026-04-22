@@ -35,77 +35,135 @@
     "commands": [
       {
         "command": "loom.refresh",
-        "title": "Loom: Refresh",
+        "title": "Refresh",
+        "category": "Loom",
         "icon": "$(refresh)"
       },
       {
         "command": "loom.weaveIdea",
-        "title": "Loom: Weave Idea",
+        "title": "Weave Idea",
         "category": "Loom",
         "icon": "$(lightbulb)"
       },
       {
         "command": "loom.weaveDesign",
-        "title": "Loom: Weave Design",
+        "title": "Weave Design",
         "category": "Loom",
         "icon": "$(symbol-structure)"
       },
       {
         "command": "loom.weavePlan",
-        "title": "Loom: Weave Plan",
+        "title": "Weave Plan",
         "category": "Loom",
         "icon": "$(checklist)"
       },
       {
         "command": "loom.finalize",
-        "title": "Loom: Finalize Document",
+        "title": "Finalize Document",
         "category": "Loom",
         "icon": "$(check)"
       },
       {
         "command": "loom.rename",
-        "title": "Loom: Rename Document",
+        "title": "Rename Document",
         "category": "Loom",
         "icon": "$(edit)"
       },
       {
         "command": "loom.refineDesign",
-        "title": "Loom: Refine Design",
+        "title": "Refine Design",
         "category": "Loom",
         "icon": "$(symbol-structure)"
       },
       {
         "command": "loom.startPlan",
-        "title": "Loom: Start Plan",
+        "title": "Start Plan",
         "category": "Loom",
         "icon": "$(play)"
       },
       {
         "command": "loom.completeStep",
-        "title": "Loom: Complete Step",
+        "title": "Complete Step",
         "category": "Loom",
         "icon": "$(pass)"
       },
       {
         "command": "loom.validate",
-        "title": "Loom: Validate",
+        "title": "Validate",
         "category": "Loom",
         "icon": "$(shield)"
       },
       {
         "command": "loom.summarise",
-        "title": "Loom: Summarise Context",
+        "title": "Summarise Context",
         "category": "Loom",
         "icon": "$(book)"
       },
       {
         "command": "loom.setGrouping",
-        "title": "Loom: Set Grouping",
+        "title": "Set Grouping",
+        "category": "Loom",
         "icon": "$(list-tree)"
+      },
+      {
+        "command": "loom.setTextFilter",
+        "title": "Filter",
+        "category": "Loom",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "loom.toggleArchived",
+        "title": "Toggle Archived",
+        "category": "Loom",
+        "icon": "$(archive)"
+      },
+      {
+        "command": "loom.chatNew",
+        "title": "New Chat",
+        "category": "Loom",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "loom.chatReply",
+        "title": "AI Reply",
+        "category": "Loom",
+        "icon": "$(sparkle)"
       }
     ],
+    "configuration": {
+      "title": "Loom",
+      "properties": {
+        "reslava-loom.ai.provider": {
+          "type": "string",
+          "enum": ["deepseek", "openai"],
+          "default": "deepseek",
+          "description": "AI provider. DeepSeek is recommended for cost-effective testing."
+        },
+        "reslava-loom.ai.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for the configured AI provider.",
+          "markdownDescription": "API key for the configured AI provider. Store securely — do not commit to source control."
+        },
+        "reslava-loom.ai.model": {
+          "type": "string",
+          "default": "",
+          "description": "Model name override. Leave blank to use the provider default (deepseek-chat / gpt-4o-mini)."
+        },
+        "reslava-loom.ai.baseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Base URL override for OpenAI-compatible endpoints. Leave blank to use provider default."
+        }
+      }
+    },
     "menus": {
       "view/title": [
+        {
+          "command": "loom.chatNew",
+          "when": "view == loom.threads",
+          "group": "navigation@0"
+        },
         {
           "command": "loom.weaveIdea",
           "when": "view == loom.threads",
@@ -127,9 +185,66 @@
           "group": "navigation@4"
         },
         {
-          "command": "loom.refresh",
+          "command": "loom.setTextFilter",
           "when": "view == loom.threads",
           "group": "navigation@5"
+        },
+        {
+          "command": "loom.toggleArchived",
+          "when": "view == loom.threads",
+          "group": "navigation@6"
+        },
+        {
+          "command": "loom.refresh",
+          "when": "view == loom.threads",
+          "group": "navigation@7"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "loom.finalize",
+          "when": "view == loom.threads && viewItem =~ /^(idea|design|primary-design)-temp$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "loom.weaveDesign",
+          "when": "view == loom.threads && viewItem =~ /^idea/",
+          "group": "inline@2"
+        },
+        {
+          "command": "loom.weavePlan",
+          "when": "view == loom.threads && viewItem =~ /^(primary-design|design)$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "loom.refineDesign",
+          "when": "view == loom.threads && viewItem =~ /^(primary-design|design)$/",
+          "group": "inline@2"
+        },
+        {
+          "command": "loom.startPlan",
+          "when": "view == loom.threads && viewItem =~ /^plan-(draft|active)$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "loom.completeStep",
+          "when": "view == loom.threads && viewItem == plan-implementing",
+          "group": "inline@1"
+        },
+        {
+          "command": "loom.summarise",
+          "when": "view == loom.threads && viewItem == weave",
+          "group": "inline@1"
+        },
+        {
+          "command": "loom.validate",
+          "when": "view == loom.threads && viewItem == weave",
+          "group": "inline@2"
+        },
+        {
+          "command": "loom.chatReply",
+          "when": "view == loom.threads && viewItem == chat",
+          "group": "inline@1"
         }
       ]
     }
