@@ -4,7 +4,7 @@ id: weave-and-thread-design
 title: "Weave and Thread — The True Graph Model"
 status: active
 created: 2026-04-21
-version: 1
+version: 3
 tags: [domain-model, graph, terminology, directory-structure]
 parent_id: core-engine-design
 child_ids: []
@@ -53,6 +53,23 @@ To keep Threads focused and comprehensible, each Thread adheres to a simple stru
 
 Create separate Threads (e.g., `auth-jwt`, `auth-oauth`) and link them to a common parent idea using `parent_id`. The idea lives in one Thread; the alternative designs live in their own Threads and link back to it.
 
+There are two reasons to split, and they have different lifecycles:
+
+**Case A — Complementary split (permanent threads).** The idea is large and needs several independent workstreams. All threads survive implementation. Each owns its design and plans; they link back to the common parent idea via `parent_id`.
+
+> Example: `auth-core`, `auth-oauth`, `auth-admin` — three threads, one parent idea, all kept.
+
+**Case B — Exploratory split (temporary threads).** One idea, multiple design candidates. You pick one winner; the rest are archived to `_archive/cancelled/`. The weave stays clean — only the chosen thread remains active. No special system support needed: `cancelled` status + the `_archive/` move covers it.
+
+**Threads are cheap. Splitting is not a cost — it is the model.** A scenario like:
+
+```
+ideaA → designA → planA-001, planA-002
+      → designB → planB-001
+```
+
+becomes three threads: `thread-a`, `thread-a-b`, `thread-a-c` — each with one design, all linked to `ideaA` via `parent_id`. The graph is readable; no thread is ambiguous.
+
 ### 2.2 What About Fast‑Tracked Designs or Plans?
 
 A Thread can start directly with a `design` or a `plan`. The root document is simply the first document created. The system does not enforce the presence of an idea.
@@ -84,6 +101,19 @@ weaves/                           # Formerly threads/
 - **Within a Thread:** Documents follow the natural chain: `idea → design → plans`. `parent_id` points to the immediate predecessor.
 - **Across Threads:** A document in one Thread can link to a document in another Thread via `parent_id`. This creates a **graph of Threads** without complicating the internal structure of any single Thread.
 - **Loose fibers:** Have no `parent_id`. They can be linked later, at which point the system may offer to move them into an appropriate Thread folder.
+
+## 4a. Chat Placement and Promotion Lifecycle
+
+Chats exist at two scopes:
+
+| Scope | Location | When |
+| :--- | :--- | :--- |
+| **Weave-level chat** | `weaves/{weave-id}/ai-chats/` | Before promotion — topic not yet assigned to a thread |
+| **Thread-level chat** | `weaves/{weave-id}/{thread-id}/ai-chats/` | After promotion — chat scoped to the thread it produced |
+
+**Promotion flow:** when a chat is promoted to an idea (`promoteToIdea`), the resulting idea lands in the thread folder. The originating chat file moves from `ai-chats/` to `{thread-id}/ai-chats/` alongside the idea. The `parent_id` on the idea permanently links to the chat regardless of file location.
+
+In Stage 1 (current), all chats live at weave level. Thread-level chat folders are introduced in Phase 4 when thread subdirectories are implemented.
 
 ## 5. Thread Creation and Naming
 
@@ -142,7 +172,7 @@ weaves/                           # Formerly threads/
 | **Current (Anchor‑Free Phase 2)** | Code uses `threads/` folder and `Thread` aggregate with `designs[]`. |
 | **Phase 3 (Cleanup)** | Remove `getPrimaryDesign()` helper and `validateSinglePrimaryDesign`. |
 | **Phase 4 (True Graph)** | Implement the Weave/Thread model: rename `threads/` → `weaves/`, introduce Thread subdirectories, update `loadThread` to scan Thread folders, implement loose fiber handling, update CLI and VS Code UI. |
-| **Phase 5 (Deprecate `role`)** | Remove the `role` field entirely from the domain model. |
+| **Phase 5 (Deprecate `role`)** | ✅ Done — `role` field removed from `DesignDoc`, `workflow.yml`, and all design doc frontmatter (2026-04-23). |
 
 ## 8. Benefits
 
@@ -159,6 +189,14 @@ weaves/                           # Formerly threads/
 - Should a Thread folder be allowed to contain loose fibers? (Recommendation: No. Loose fibers live at the Weave root. A Thread folder contains exactly the documents of that workstream.)
 - How to handle renaming a Thread? (Renaming the folder updates the Thread name. Inbound `parent_id` links are by document ID, so they remain intact.)
 - Should we allow moving a document between Threads via drag‑and‑drop? (Yes. This is a core UX feature of Phase 4.)
+
+## 9a. Settled Decisions (from loom-contrains-chat, 2026-04-23)
+
+- **1 thread = 1 design.** Confirmed. Alternatives explored as separate threads linked to a common parent idea.
+- **Threads are cheap.** Splitting is the model, not a workaround. A weave can have many threads.
+- **Chat promotion moves the chat file.** When a chat is promoted to an idea, the chat moves from `{weave}/ai-chats/` to `{weave}/{thread}/ai-chats/` (Phase 4). In Stage 1, chats stay at weave level.
+- **Weave-level chats (`ai-chats/`) exist at both scopes.** Weave-level for unscoped brainstorming; thread-level for scoped conversations (future).
+- **Two split motivations:** Case A (complementary — all threads kept, idea is large) vs Case B (exploratory — alternatives cancelled/archived, one winner chosen). Both use the same model; lifecycle differs.
 
 ## 10. Decision
 
