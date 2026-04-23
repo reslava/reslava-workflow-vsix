@@ -116,11 +116,12 @@ Idea created in `weaves/vscode-extension/` — see `thread-status-filter-idea.md
 The commit → compact → continue cycle is exactly right. Each phase ends with tests green + commit, so compaction never loses context — the plan doc and git log are the persistent state. Claude resumes from the plan step table, not from conversation memory.
 
 Suggested cadence (phase boundaries are natural break points):
-- Phase 1 commit → compact
-- Phase 2 commit → compact  
-- Phase 3 commit → Phase 4 commit → compact (both are shorter)
-- Phase 5 commit → compact
-- Phase 6 commit → Phase 7 commit → compact
-- Phase 8 commit → Phase 9 commit → done
+plan weave-and-thread-plan-001
+- [ ] Do Feature branch, Phase 1, commit → compact
+- [ ] Do Phase 2 commit → compact  
+- [ ] Do Phase 3 commit → Phase 4, commit → compact (both are shorter)
+- [ ] Do Phase 5 commit → compact
+- [ ] Do Phase 6 commit → Phase 7, commit → compact
+- [ ] Do Phase 8 commit → Phase 9, commit → done
 
 One rule: always compact *after* committing, never before. That way if context is lost mid-phase, the last commit is the restore point and the plan table shows exactly which step to resume from.
