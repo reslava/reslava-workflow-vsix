@@ -96,9 +96,9 @@ Every layer is affected: core entities, fs loaders, app use-cases, CLI, VS Code 
 
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
-| 🔳 | 15 | Add `--thread <id>` to `loom weave idea|design|plan`. Default behavior: creates thread named after the doc (e.g., `loom weave idea "State Management"` → thread `state-management`). `--loose` flag explicitly creates a loose fiber. | `packages/cli/src/commands/weave*.ts` | Step 12 |
-| 🔳 | 16 | Update `loom status` / `loom state` output to show Weave → Threads → Docs (per design section 6.2). Loose fibers as separate section. | `packages/cli/src/commands/status.ts`, `state.ts` | Step 15 |
-| 🔳 | 17 | CLI tests: rewrite `commands.test.ts` for new layout, including thread creation and loose-fiber flow. | `tests/commands.test.ts` | Steps 15–16 |
+| ✅ | 15 | Add `--thread <id>` to `loom weave idea|design|plan`. Default behavior: creates thread named after the doc (e.g., `loom weave idea "State Management"` → thread `state-management`). `--loose` flag explicitly creates a loose fiber. | `packages/cli/src/commands/weave*.ts` | Step 12 |
+| ✅ | 16 | Update `loom status` / `loom state` output to show Weave → Threads → Docs (per design section 6.2). Loose fibers as separate section. | `packages/cli/src/commands/status.ts`, `state.ts` | Step 15 |
+| ✅ | 17 | CLI tests: rewrite `commands.test.ts` for new layout, including thread creation and loose-fiber flow. | `tests/commands.test.ts` | Steps 15–16 |
 
 ### Phase 5 — VS Code Tree & Commands
 
