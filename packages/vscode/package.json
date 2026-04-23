@@ -158,6 +158,12 @@
         "title": "Refine Plan",
         "category": "Loom",
         "icon": "$(edit)"
+      },
+      {
+        "command": "loom.doStep",
+        "title": "Do Step(s)",
+        "category": "Loom",
+        "icon": "$(sparkle)"
       }
     ],
     "configuration": {
@@ -257,13 +263,18 @@
           "group": "inline@1"
         },
         {
-          "command": "loom.completeStep",
-          "when": "view == loom.threads && viewItem == plan-implementing",
+          "command": "loom.doStep",
+          "when": "view == loom.threads && viewItem == plan-implementing && loom.aiEnabled",
           "group": "inline@1"
         },
         {
+          "command": "loom.completeStep",
+          "when": "view == loom.threads && viewItem == plan-implementing",
+          "group": "inline@2"
+        },
+        {
           "command": "loom.summarise",
-          "when": "view == loom.threads && viewItem == weave",
+          "when": "view == loom.threads && viewItem == weave && loom.aiEnabled",
           "group": "inline@1"
         },
         {
@@ -273,32 +284,32 @@
         },
         {
           "command": "loom.chatReply",
-          "when": "view == loom.threads && viewItem == chat",
+          "when": "view == loom.threads && viewItem == chat && loom.aiEnabled",
           "group": "inline@1"
         },
         {
           "command": "loom.promoteToIdea",
-          "when": "view == loom.threads && viewItem == chat",
+          "when": "view == loom.threads && viewItem == chat && loom.aiEnabled",
           "group": "inline@2"
         },
         {
           "command": "loom.promoteToDesign",
-          "when": "view == loom.threads && viewItem =~ /^(chat|idea)/",
+          "when": "view == loom.threads && viewItem =~ /^(chat|idea)/ && loom.aiEnabled",
           "group": "inline@3"
         },
         {
           "command": "loom.promoteToPlan",
-          "when": "view == loom.threads && viewItem =~ /^(chat|idea|primary-design|design)/",
+          "when": "view == loom.threads && viewItem =~ /^(chat|idea|primary-design|design)/ && loom.aiEnabled",
           "group": "inline@4"
         },
         {
           "command": "loom.refineIdea",
-          "when": "view == loom.threads && viewItem =~ /^idea/",
+          "when": "view == loom.threads && viewItem =~ /^idea/ && loom.aiEnabled",
           "group": "inline@1"
         },
         {
           "command": "loom.refinePlan",
-          "when": "view == loom.threads && viewItem =~ /^plan-/",
+          "when": "view == loom.threads && viewItem =~ /^plan-/ && loom.aiEnabled",
           "group": "inline@2"
         }
       ]

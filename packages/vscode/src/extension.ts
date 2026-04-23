@@ -20,6 +20,7 @@ import { promoteToDesignCommand } from './commands/promoteToDesign';
 import { promoteToPlanCommand } from './commands/promoteToPlan';
 import { refineIdeaCommand } from './commands/refineIdea';
 import { refinePlanCommand } from './commands/refinePlan';
+import { doStepCommand } from './commands/doStep';
 import { setIconBaseUri } from './icons';
 import { updateDiagnostics } from './diagnostics';
 
@@ -69,7 +70,19 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('loom.promoteToDesign', () => promoteToDesignCommand(treeProvider)),
         vscode.commands.registerCommand('loom.promoteToPlan', () => promoteToPlanCommand(treeProvider)),
         vscode.commands.registerCommand('loom.refineIdea', () => refineIdeaCommand(treeProvider)),
-        vscode.commands.registerCommand('loom.refinePlan', () => refinePlanCommand(treeProvider))
+        vscode.commands.registerCommand('loom.refinePlan', () => refinePlanCommand(treeProvider)),
+        vscode.commands.registerCommand('loom.doStep', (node?: TreeNode) => doStepCommand(treeProvider, node))
+    );
+
+    function syncAiContext(): void {
+        const apiKey = vscode.workspace.getConfiguration('reslava-loom.ai').get<string>('apiKey') ?? '';
+        vscode.commands.executeCommand('setContext', 'loom.aiEnabled', apiKey.length > 0);
+    }
+    syncAiContext();
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('reslava-loom.ai.apiKey')) syncAiContext();
+        })
     );
 
     context.subscriptions.push(

@@ -300,8 +300,21 @@ export class LoomTreeProvider implements vscode.TreeDataProvider<TreeNode> {
         const node = new vscode.TreeItem(plan.title || plan.id, vscode.TreeItemCollapsibleState.None);
         const doneSteps = plan.steps?.filter(s => s.done).length ?? 0;
         const totalSteps = plan.steps?.length ?? 0;
-        node.description = plan.staled ? `${plan.status} ⚠️ stale` : plan.status;
-        node.tooltip = `${plan.status} • ${doneSteps}/${totalSteps} steps`;
+        const nextStep = plan.steps?.find(s => !s.done);
+        const progress = `${doneSteps}/${totalSteps}`;
+        if (plan.staled) {
+            node.description = `${plan.status} ⚠️ stale`;
+        } else if (nextStep && plan.status === 'implementing') {
+            const label = nextStep.description.length > 35
+                ? nextStep.description.slice(0, 35) + '…'
+                : nextStep.description;
+            node.description = `${progress} · Step ${nextStep.order}: ${label}`;
+        } else {
+            node.description = `${progress} · ${plan.status}`;
+        }
+        node.tooltip = nextStep
+            ? `${plan.status} • ${progress} steps\nNext: Step ${nextStep.order} — ${nextStep.description}`
+            : `${plan.status} • ${progress} steps`;
         node.iconPath = getPlanIcon(plan.status);
         node.contextValue = `plan-${plan.status}`;
 

@@ -122,7 +122,7 @@ This is the biggest structural change. Worth doing, but it will touch the entire
 
 1. **15** — Golden path test (find real gaps)
 2. ✅ **8** — Fix `workflow.yml` (5 minutes)
-3. **9** — Settle the weave/thread constraint question (design decision, then code if needed)
+3. ✅ **9** — Settle the weave/thread constraint question (design decision, then code if needed)
 4. ✅ **6** — `promoteToDesign`, `refineIdea/Design`, and fill out the AI command palette
 5. **4** — weaves → threads refactor
 
@@ -214,3 +214,120 @@ Done:
 - **Plan:** `weaves/core-engine/plans/ai-command-palette-plan-001.md` — 11 steps: rename, promoteToDesign, promoteToPlan, refineIdea, refinePlan, wire summarize, build+test.
 
 Next: waiting for `go` to start Step 1 (rename `promoteIdea` → `promoteToIdea`), or direction to reorder.
+
+## Rafa:
+### Pending commands
+1. Plan steps inline buttons:   
+  - for every plan, vsix should show always next active step* 
+  - `do Step(s)`: next*, all pending, show all pending to let the user pick: 
+    - 2, 3, 5, 6
+    - 4-12, 15
+    - Or other UX than let the user view and pick
+    - When AI finish will mark Steps done* or better AI return steps done and loom mark them
+
+2. AI enabled*/disabled, decide actions or hide them when disabled   
+
+* MVP features
+
+### CLI vs vsix
+- should we mantain simmetry pf commands and functionality between cli and vscode?
+- vscode is the main and full feature UX
+
+## AI:
+
+**On plan step inline buttons (MVP scope)**
+
+The "always show next active step" pattern is the right MVP. Here is how I would define the UX:
+
+- Each plan node in the tree shows its next unblocked, undone step as a subtitle.
+- `Complete Step` button (`$(pass)` icon, already registered) marks that step done and refreshes the tree.
+- For "do multiple steps": the simplest MVP is a Quick Pick showing all pending steps as checkboxes — user selects which to mark done, loom marks them all. No AI needed for marking; AI is a separate "implement this step" action.
+- Step completion should be driven by loom (the human or AI tells loom "steps 2, 3, 5 are done"), not by AI self-reporting. Keeps the state authoritative.
+
+**On AI enabled/disabled**
+
+Clean rule: if `reslava-loom.ai.apiKey` is empty, hide all AI commands from menus and show a warning inline where AI output would appear. No key = no AI actions rendered. This is one `when` clause on each menu entry: `&& reslava-loom.ai.enabled` (a derived context key we set on activation).
+
+**On CLI vs VS Code symmetry**
+
+My recommendation: **no enforced symmetry**. VS Code is the primary UX — full features, inline buttons, AI-driven actions, tree view. CLI is a power-user shortcut and scripting surface. It should cover the read path (status, validate, list) and the write path for non-interactive use (create docs, complete steps). AI commands stay VS Code-only for now — CLI has no API key config and no good output format for AI results. Symmetry is a maintenance burden; let each layer do what it does well.
+
+## Rafa:
+workflow to do and mark plan steps:
+1. user see next active step, click on AI do these steps, and pick from checkboxes
+2. AI implement the steps, finish. Where AI and user chat while implementing?
+3. Loom mark steps done
+
+correct?
+
+## AI:
+
+Almost — one gap in step 2: VS Code has no built-in chat panel, so "AI and user chat while implementing" needs a home. Two options:
+
+**Option A — AI runs silently, reports result in a notification + output channel.**
+User clicks "Do steps 2, 3, 5" → progress spinner → AI finishes → notification "Steps 2, 3, 5 complete" + output channel shows what was done. No back-and-forth. Simple, works today.
+
+**Option B — AI runs in a new chat doc.**
+User clicks "Do steps" → loom creates a new `{weave}-chat-N.md` → AI writes its implementation notes there → user can reply → when done, user clicks "Mark steps done". The chat doc becomes the implementation record.
+
+Option B fits Loom's document-driven model better and gives you a permanent record. Option A is faster to build.
+
+**Corrected workflow (Option B, MVP):**
+1. User sees next active step in tree, clicks `Do Step(s)`, picks from Quick Pick checkboxes.
+2. Loom creates a new chat doc, AI writes implementation plan/notes there. User can reply in the doc.
+3. When user is satisfied, clicks `Complete Step(s)` on the plan node → loom marks the selected steps done and refreshes the tree.
+
+Step 3 is always a deliberate human action — AI never marks steps done on its own. That keeps the plan state authoritative.
+
+Does Option B feel right, or do you prefer the simpler silent Option A for now?
+
+## Rafa:
+No way for Option A, why? becuase no beginners Users will quit using loom. This way User lose the control of the most important phase, implementation.
+
+So Option B.
+What happen after user clicks `Complete Step(s)` ?
+- AI write implementation notes in the CHAT
+- AI should stop if some important decision needs to be done or some block point
+- Can AI writes in CHAT while implementing without stopping the flow?
+
+### -done.md documents
+That brings me another doc type I used with you in my previous project.
+After you finished a plan I asked you:
+- Create a -done doc with implementation notes
+- 
+## AI:
+
+**Option B confirmed. On the step completion flow:**
+
+After user clicks `Complete Step(s)`:
+1. Loom marks those steps done in the plan frontmatter, bumps nothing else.
+2. Tree refreshes — next active step is now visible.
+3. The chat doc stays open; user and AI continue there for the next step.
+
+**On AI writing to chat while implementing:**
+Yes — the chat doc is the running log. AI appends under `## AI:` as it works: what it did, decisions made, blockers hit. This is already how the current `chatReply` works (AI writes into the doc). The implementation session *is* a chat session in that doc.
+
+For blocking decisions: AI stops mid-session, writes the decision question under `## AI:`, waits. User replies under `## Rafa:`, AI continues. Same protocol as any chat. No special "stop" mechanism needed — it is just the normal chat turn.
+
+**On `-done.md` documents:**
+This is a great pattern and fits Loom naturally. A `-done.md` is a post-plan record: what was built, key decisions locked in, anything that diverged from the plan. It lives alongside the plan (`{plan-id}-done.md` or a `done/` subfolder).
+
+It is different from the chat doc — the chat is the live working log during implementation; the done doc is the clean retrospective written after. Two distinct purposes.
+
+Should this become a first-class doc type (`type: done`, generated by a `loom.closePlan` command), or a convention (a markdown file the AI writes at the end of a plan chat)? The latter is simpler to start with.
+
+## Rafa:
+- Create an idea for `done` docs
+- Create a plan for the rest
+
+note: My concern is if AI will show same info that in chat window or less detailed?
+Will user feel that using loom is less informative than chat window?
+I hate chat window, it is one of the main reasons I started ideating this doc system working with you, but user should be he don't miss anything, he should feel a richer experience
+
+## AI:
+
+On richness: this is exactly Loom's advantage over a chat window. In a chat window the conversation is ephemeral — bubbles that scroll away, no structure, nothing to link to. In a Loom chat doc the AI writes *into a document* that is persistent, editable, linkable, and lives next to the plan it implements. The user can annotate inline, push back, reference file paths. The format is richer *by design*. A chat window gives you a conversation; Loom gives you a record.
+
+The concern is valid only if the AI writes *less* — which would be a prompt quality problem, not a structural one. We make sure the system prompt for the implementation chat asks for full detail: what was done, why, what was skipped, what to watch for.
+
+Creating the idea and plan now.
