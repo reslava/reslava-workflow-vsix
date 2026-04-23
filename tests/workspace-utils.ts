@@ -69,6 +69,62 @@ ${stepsRows}
     return { weavePath, planId };
 }
 
+export async function seedWeaveWithThread(
+    loomRoot: string,
+    weaveId: string,
+    threadId: string,
+    options?: { planStatus?: string; steps?: number }
+): Promise<{ weavePath: string; threadPath: string; planId: string }> {
+    const weavePath = path.join(loomRoot, 'weaves', weaveId);
+    const threadPath = path.join(weavePath, threadId);
+    // Plan IDs use weaveId prefix so use-cases can extract weaveId via planId.split('-plan-')[0]
+    const planId = `${weaveId}-plan-001`;
+    const stepCount = options?.steps ?? 2;
+
+    const designFm = serializeFrontmatter({
+        type: 'design',
+        id: `${threadId}-design`,
+        title: `${threadId} Design`,
+        status: 'active',
+        created: '2026-04-24',
+        version: 1,
+        tags: [],
+        parent_id: null,
+        child_ids: [planId],
+        requires_load: [],
+    });
+    await outputFile(
+        path.join(threadPath, `${threadId}-design.md`),
+        `${designFm}\n## Overview\nTest design.\n`
+    );
+
+    const stepsRows = Array.from({ length: stepCount }, (_, i) =>
+        `| 🔳 | ${i + 1} | Step ${i + 1} | src/ | — |`
+    ).join('\n');
+    const planFm = serializeFrontmatter({
+        type: 'plan',
+        id: planId,
+        title: `Test Plan ${weaveId}`,
+        status: options?.planStatus ?? 'implementing',
+        created: '2026-04-24',
+        version: 1,
+        tags: [],
+        parent_id: `${threadId}-design`,
+        child_ids: [],
+        requires_load: [],
+    });
+    const planDoc = `${planFm}
+## Steps
+
+| Done | # | Step | Files touched | Blocked by |
+|------|---|------|---------------|------------|
+${stepsRows}
+`;
+    await outputFile(path.join(threadPath, 'plans', `${planId}.md`), planDoc);
+
+    return { weavePath, threadPath, planId };
+}
+
 export function fileExists(filePath: string): boolean {
     return fsNative.existsSync(filePath);
 }

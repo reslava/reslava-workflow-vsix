@@ -86,11 +86,11 @@ Every layer is affected: core entities, fs loaders, app use-cases, CLI, VS Code 
 
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
-| 🔳 | 10 | Update `getState` to aggregate across threads: totals count all threads' plans, `stalePlans` checks each thread's design_version against its plans. | `packages/app/src/getState.ts` | Step 9 |
-| 🔳 | 11 | Add `resolveThread` helper: given a weave + optional threadId/filePath, returns the target thread or "loose". Used by every use-case that needs thread context. | `packages/app/src/utils/resolveThread.ts` (new) | Step 10 |
-| 🔳 | 12 | Update doc-creation use-cases (`weaveIdea`, `weaveDesign`, `weavePlan`) to take optional `threadId`: if provided, create thread subdir & write doc there; if omitted, write as loose fiber (idea/design) at weave root. | `packages/app/src/weaveIdea.ts`, `weaveDesign.ts`, `weavePlan.ts` | Step 11 |
-| 🔳 | 13 | Update plan-lifecycle use-cases (`completeStep`, `closePlan`, `doStep`, `summarise`): resolve thread from plan's location, write done docs and chats into the thread. | `packages/app/src/completeStep.ts`, `closePlan.ts`, `doStep.ts`, `summarise.ts` | Step 11 |
-| 🔳 | 14 | Use-case tests: end-to-end with j:/temp/loom — create idea in thread, promote to design, create plan, complete steps, close, do-step. Verify all files land in correct thread folders. | `tests/workspace-workflow.test.ts` (rewrite) | Steps 12–13 |
+| ✅ | 10 | Update `getState` to aggregate across threads: totals count all threads' plans, `stalePlans` checks each thread's design_version against its plans. | `packages/app/src/getState.ts` | Step 9 |
+| ✅ | 11 | Add `resolveThread` helper: given a weave + optional threadId/filePath, returns the target thread or "loose". Used by every use-case that needs thread context. | `packages/app/src/utils/resolveThread.ts` (new) | Step 10 |
+| ✅ | 12 | Update doc-creation use-cases (`weaveIdea`, `weaveDesign`, `weavePlan`) to take optional `threadId`: if provided, create thread subdir & write doc there; if omitted, write as loose fiber (idea/design) at weave root. | `packages/app/src/weaveIdea.ts`, `weaveDesign.ts`, `weavePlan.ts` | Step 11 |
+| ✅ | 13 | Update plan-lifecycle use-cases (`completeStep`, `closePlan`, `doStep`, `summarise`): resolve thread from plan's location, write done docs and chats into the thread. | `packages/app/src/completeStep.ts`, `closePlan.ts`, `doStep.ts`, `summarise.ts` | Step 11 |
+| ✅ | 14 | Use-case tests: end-to-end with j:/temp/loom — create idea in thread, promote to design, create plan, complete steps, close, do-step. Verify all files land in correct thread folders. | `tests/workspace-workflow.test.ts` (rewrite) | Steps 12–13 |
 
 ### Phase 4 — CLI
 
