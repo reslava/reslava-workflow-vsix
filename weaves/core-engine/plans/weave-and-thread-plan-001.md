@@ -75,12 +75,12 @@ Every layer is affected: core entities, fs loaders, app use-cases, CLI, VS Code 
 
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
-| 🔳 | 4 | Add `listThreadDirs(weavePath)` utility: returns subdirs excluding reserved names (`plans`, `done`, `ai-chats`, `ctx`, `references`, `_archive`). A subdir counts as a thread if it contains at least one doc matching `{thread-id}-{idea\|design\|plan}.md`. | `packages/fs/src/utils/pathUtils.ts` | Step 3 |
-| 🔳 | 5 | Implement `loadThread(loomRoot, weaveId, threadId, index?)`: scans the thread folder, returns `Thread`. Enforces "1 idea, 1 design, N plans" — warn if violated. | `packages/fs/src/repositories/threadRepository.ts` (new), `packages/fs/src/index.ts` | Step 4 |
-| 🔳 | 6 | Rewrite `loadWeave`: calls `listThreadDirs` + `loadThread` for each, plus loads loose fibers (flat `.md` at weave root) and weave-level `ai-chats/`. Returns new `Weave` shape. | `packages/fs/src/repositories/weaveRepository.ts` | Step 5 |
-| 🔳 | 7 | Update `saveWeave` / add `saveThread`: determine path per doc type *within* thread (`{thread}/{doc-id}.md` for idea/design, `{thread}/plans/{id}.md`, `{thread}/done/{id}.md`). Loose fibers save to weave root. | `packages/fs/src/repositories/weaveRepository.ts`, `packages/fs/src/repositories/threadRepository.ts` | Step 6 |
-| 🔳 | 8 | Update `buildLinkIndex`: walks threads, indexes all docs with their thread context. Index entry gains `threadId` field. | `packages/fs/src/repositories/linkRepository.ts`, `packages/core/src/linkIndex.ts` | Step 6 |
-| 🔳 | 9 | Repository tests: seed new-layout workspace at `j:/temp/loom`, verify `loadWeave` returns correct threads + loose fibers, verify round-trip save/load. | `tests/weave-repository.test.ts` (rewrite), `tests/thread-repository.test.ts` (new) | Steps 5–8 |
+| ✅ | 4 | Add `listThreadDirs(weavePath)` utility: returns subdirs excluding reserved names (`plans`, `done`, `ai-chats`, `ctx`, `references`, `_archive`). A subdir counts as a thread if it contains at least one doc matching `{thread-id}-{idea\|design\|plan}.md`. | `packages/fs/src/utils/pathUtils.ts` | Step 3 |
+| ✅ | 5 | Implement `loadThread(loomRoot, weaveId, threadId, index?)`: scans the thread folder, returns `Thread`. Enforces "1 idea, 1 design, N plans" — warn if violated. | `packages/fs/src/repositories/threadRepository.ts` (new), `packages/fs/src/index.ts` | Step 4 |
+| ✅ | 6 | Rewrite `loadWeave`: calls `listThreadDirs` + `loadThread` for each, plus loads loose fibers (flat `.md` at weave root) and weave-level `ai-chats/`. Returns new `Weave` shape. | `packages/fs/src/repositories/weaveRepository.ts` | Step 5 |
+| ✅ | 7 | Update `saveWeave` / add `saveThread`: determine path per doc type *within* thread (`{thread}/{doc-id}.md` for idea/design, `{thread}/plans/{id}.md`, `{thread}/done/{id}.md`). Loose fibers save to weave root. | `packages/fs/src/repositories/weaveRepository.ts`, `packages/fs/src/repositories/threadRepository.ts` | Step 6 |
+| ✅ | 8 | Update `buildLinkIndex`: walks threads, indexes all docs with their thread context. Index entry gains `threadId` field. | `packages/fs/src/repositories/linkRepository.ts`, `packages/core/src/linkIndex.ts` | Step 6 |
+| ✅ | 9 | Repository tests: seed new-layout workspace at `j:/temp/loom`, verify `loadWeave` returns correct threads + loose fibers, verify round-trip save/load. | `tests/weave-repository.test.ts` (rewrite), `tests/thread-repository.test.ts` (new) | Steps 5–8 |
 
 ### Phase 3 — app Layer
 
