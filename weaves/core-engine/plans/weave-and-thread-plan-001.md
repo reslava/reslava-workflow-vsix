@@ -67,9 +67,9 @@ Every layer is affected: core entities, fs loaders, app use-cases, CLI, VS Code 
 
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
-| 🔳 | 1 | Create `Thread` entity: `{ id, weaveId, idea?, design?, plans[], dones[], chats[], allDocs[] }`. Add unit type for `Fiber` (= Document in a thread). | `packages/core/src/entities/thread.ts` (new), `packages/core/src/entities/index.ts` | — |
-| 🔳 | 2 | Update `Weave` entity: replace flat `ideas[]`/`designs[]`/`plans[]`/`dones[]` with `threads: Thread[]`. Add `looseFibers: Document[]` for weave-root docs. Keep `chats[]` at weave level. | `packages/core/src/entities/weave.ts`, `packages/core/src/derived.ts` (getWeaveStatus aggregates across threads) | Step 1 |
-| 🔳 | 3 | Add `getThreadStatus` derived helper (mirrors current `getWeaveStatus` logic but at thread level). Entity tests: construct Weave with 2 threads, verify aggregation. | `packages/core/src/derived.ts`, `tests/entity.test.ts` | Steps 1–2 |
+| ✅ | 1 | Create `Thread` entity: `{ id, weaveId, idea?, design?, plans[], dones[], chats[], allDocs[] }`. Add unit type for `Fiber` (= Document in a thread). | `packages/core/src/entities/thread.ts` (new), `packages/core/src/entities/index.ts` | — |
+| ✅ | 2 | Update `Weave` entity: replace flat `ideas[]`/`designs[]`/`plans[]`/`dones[]` with `threads: Thread[]`. Add `looseFibers: Document[]` for weave-root docs. Keep `chats[]` at weave level. | `packages/core/src/entities/weave.ts`, `packages/core/src/derived.ts` (getWeaveStatus aggregates across threads) | Step 1 |
+| ✅ | 3 | Add `getThreadStatus` derived helper (mirrors current `getWeaveStatus` logic but at thread level). Entity tests: construct Weave with 2 threads, verify aggregation. | `packages/core/src/derived.ts`, `tests/entity.test.ts` | Steps 1–2 |
 
 ### Phase 2 — fs Layer (Load / Save / Index)
 
