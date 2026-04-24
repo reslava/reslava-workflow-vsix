@@ -43,19 +43,19 @@
         "command": "loom.weaveIdea",
         "title": "Weave Idea",
         "category": "Loom",
-        "icon": "$(lightbulb)"
+        "icon": { "light": "media/icons/idea.svg", "dark": "media/icons/idea.svg" }
       },
       {
         "command": "loom.weaveDesign",
         "title": "Weave Design",
         "category": "Loom",
-        "icon": "$(symbol-structure)"
+        "icon": { "light": "media/icons/design.svg", "dark": "media/icons/design.svg" }
       },
       {
         "command": "loom.weavePlan",
         "title": "Weave Plan",
         "category": "Loom",
-        "icon": "$(checklist)"
+        "icon": { "light": "media/icons/plan.svg", "dark": "media/icons/plan.svg" }
       },
       {
         "command": "loom.finalize",
@@ -103,25 +103,25 @@
         "command": "loom.setGrouping",
         "title": "Set Grouping",
         "category": "Loom",
-        "icon": "$(list-tree)"
+        "icon": { "light": "media/icons/group.svg", "dark": "media/icons/group.svg" }
       },
       {
         "command": "loom.setTextFilter",
         "title": "Filter",
         "category": "Loom",
-        "icon": "$(filter)"
+        "icon": { "light": "media/icons/filter.svg", "dark": "media/icons/filter.svg" }
       },
       {
         "command": "loom.toggleArchived",
         "title": "Toggle Archived",
         "category": "Loom",
-        "icon": "$(archive)"
+        "icon": { "light": "media/icons/archive.svg", "dark": "media/icons/archive.svg" }
       },
       {
         "command": "loom.chatNew",
         "title": "New Chat",
         "category": "Loom",
-        "icon": "$(comment-discussion)"
+        "icon": { "light": "media/icons/chat.svg", "dark": "media/icons/chat.svg" }
       },
       {
         "command": "loom.chatReply",
@@ -133,19 +133,19 @@
         "command": "loom.promoteToIdea",
         "title": "Promote to Idea",
         "category": "Loom",
-        "icon": "$(lightbulb)"
+        "icon": { "light": "media/icons/idea.svg", "dark": "media/icons/idea.svg" }
       },
       {
         "command": "loom.promoteToDesign",
         "title": "Promote to Design",
         "category": "Loom",
-        "icon": "$(symbol-structure)"
+        "icon": { "light": "media/icons/design.svg", "dark": "media/icons/design.svg" }
       },
       {
         "command": "loom.promoteToPlan",
         "title": "Promote to Plan",
         "category": "Loom",
-        "icon": "$(checklist)"
+        "icon": { "light": "media/icons/plan.svg", "dark": "media/icons/plan.svg" }
       },
       {
         "command": "loom.refineIdea",

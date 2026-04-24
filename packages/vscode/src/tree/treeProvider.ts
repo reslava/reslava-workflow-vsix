@@ -14,7 +14,7 @@ import { DoneDoc } from '@reslava-loom/core/dist/entities/done';
 import { getWeaveStatus, getThreadStatus } from '@reslava-loom/core/dist/derived';
 import { ViewStateManager } from '../view/viewStateManager';
 import { GroupingMode, ViewState } from '../view/viewState';
-import { getDocumentIcon, getWeaveIcon, getPlanIcon } from '../icons';
+import { Icons, icon, getDocumentIcon, getWeaveIcon, getThreadIcon, getPlanIcon } from '../icons';
 
 export interface TreeNode extends vscode.TreeItem {
     children?: TreeNode[];
@@ -228,7 +228,7 @@ export class LoomTreeProvider implements vscode.TreeDataProvider<TreeNode> {
         const status = getThreadStatus(thread);
         const node = new vscode.TreeItem(thread.id, vscode.TreeItemCollapsibleState.Collapsed);
         node.description = thread.design?.title ?? status;
-        node.iconPath = getWeaveIcon(status);
+        node.iconPath = getThreadIcon(status);
         node.contextValue = 'thread';
         node.tooltip = thread.design
             ? `${thread.design.title} (v${thread.design.version})`
@@ -303,7 +303,7 @@ export class LoomTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     private createChatNode(chat: ChatDoc, weaveId?: string, threadId?: string): TreeNode {
         const node = new vscode.TreeItem(chat.title || chat.id, vscode.TreeItemCollapsibleState.None);
         node.description = chat.status;
-        node.iconPath = new vscode.ThemeIcon('comment-discussion');
+        node.iconPath = icon(Icons.chat);
         node.contextValue = 'chat';
         node.tooltip = `chat • ${chat.status}`;
 
