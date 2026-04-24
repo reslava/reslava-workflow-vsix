@@ -6,8 +6,8 @@
 
 Stop losing context when working with AI. Loom turns your Markdown files into a structured, versionable workflow engine that weaves human intent with AI execution.
 
-> 🚀 **Stable CLI — v0.1.0 is here!**  
-> The core workflow engine is complete. A VS Code extension is in active development.
+> 🚀 **v0.3.0 — Weave/Thread graph model shipped!**  
+> Threads are now first-class. The VS Code extension renders Thread nodes. Migration script included.
 
 ---
 
@@ -43,7 +43,7 @@ Weave: Payment System
 
 ---
 
-## Key Features (CLI v0.1.0)
+## Key Features (v0.3.0)
 
 | Feature | Description |
 |---------|-------------|

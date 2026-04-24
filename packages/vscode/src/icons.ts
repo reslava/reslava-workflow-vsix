@@ -3,9 +3,11 @@ import * as vscode from 'vscode';
 export const Icons = {
     // Activity & View
     loom: 'loom',
-    weave: 'weave',    
+    weave: 'weave',
+    thread: 'thread',    
 
     // Document Types
+    chat: 'chat',
     idea: 'idea',
     design: 'design',
     plan: 'plan',
@@ -21,6 +23,8 @@ export const Icons = {
 const CodiconMap: Readonly<Record<keyof typeof Icons, string>> = {
     loom: 'graph',
     weave: 'project',
+    thread: 'git-branch',
+    chat: 'comment-discussion',
     idea: 'lightbulb',
     design: 'symbol-structure',
     plan: 'checklist',
@@ -45,6 +49,14 @@ export function icon(id: keyof typeof Icons): vscode.ThemeIcon | { light: vscode
     return new vscode.ThemeIcon(CodiconMap[id]);
 }
 
+function svgIcon(filename: string, codiconFallback: string): vscode.ThemeIcon | { light: vscode.Uri; dark: vscode.Uri } {
+    if (EXT_URI) {
+        const uri = vscode.Uri.joinPath(EXT_URI, 'media', 'icons', filename);
+        return { light: uri, dark: uri };
+    }
+    return new vscode.ThemeIcon(codiconFallback);
+}
+
 /**
  * Returns the appropriate icon for a document type.
  */
@@ -54,19 +66,32 @@ export function getDocumentIcon(type: string): ReturnType<typeof icon> {
         case 'idea':   return icon(Icons.idea);
         case 'plan':   return icon(Icons.plan);
         case 'ctx':    return icon(Icons.ctx);
+        case 'chat':   return icon(Icons.chat);
         default:       return icon(Icons.design);
+    }
+}
+
+/**
+ * Returns the appropriate icon for a weave status.
+ */
+export function getWeaveIcon(status: string): ReturnType<typeof icon> {
+    switch (status) {
+        case 'IMPLEMENTING': return svgIcon('weave-implementing.svg', 'sync~spin');
+        case 'DONE':         return svgIcon('status-done.svg', 'pass-filled');
+        case 'CANCELLED':    return new vscode.ThemeIcon('error');
+        default:             return icon(Icons.weave);
     }
 }
 
 /**
  * Returns the appropriate icon for a thread status.
  */
-export function getWeaveIcon(status: string): ReturnType<typeof icon> {
+export function getThreadIcon(status: string): ReturnType<typeof icon> {
     switch (status) {
-        case 'IMPLEMENTING': return new vscode.ThemeIcon('sync~spin');
-        case 'DONE':         return new vscode.ThemeIcon('pass-filled');
+        case 'IMPLEMENTING': return svgIcon('thread-implementing.svg', 'sync~spin');
+        case 'DONE':         return svgIcon('status-done.svg', 'pass-filled');
         case 'CANCELLED':    return new vscode.ThemeIcon('error');
-        default:             return icon(Icons.weave);
+        default:             return icon(Icons.thread);
     }
 }
 
@@ -75,8 +100,8 @@ export function getWeaveIcon(status: string): ReturnType<typeof icon> {
  */
 export function getPlanIcon(status: string): ReturnType<typeof icon> {
     switch (status) {
-        case 'implementing': return new vscode.ThemeIcon('sync~spin');
-        case 'done':         return new vscode.ThemeIcon('pass-filled');
+        case 'implementing': return svgIcon('plan-implementing.svg', 'sync~spin');
+        case 'done':         return svgIcon('status-done.svg', 'pass-filled');
         case 'blocked':      return new vscode.ThemeIcon('warning');
         default:             return icon(Icons.plan);
     }
