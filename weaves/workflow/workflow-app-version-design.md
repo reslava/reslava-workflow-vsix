@@ -7,7 +7,7 @@ created: 2026-04-12
 version: 1.0.0
 tags: [versioning, release, planning, frontmatter]
 parent_id: workflow-design-v2
-child_ids: [design-template.md]
+child_ids: []
 requires_load: []
 ---
 

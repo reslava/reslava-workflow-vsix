@@ -1,9 +1,9 @@
 ---
 type: idea
 id: canonical-frontmatter-serializer-idea
-title: "Canonical Frontmatter Serializer}"
-status: draft | active | done | cancelled
-created: 2026-15-04
+title: "Canonical Frontmatter Serializer"
+status: done
+created: 2026-04-15
 version: 1
 tags: []
 parent_id: null

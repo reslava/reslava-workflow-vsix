@@ -6,9 +6,9 @@ status: done
 created: 2026-04-16
 version: 1
 tags: [architecture, refactor]
-design_id: app-layer-refactor
-target_version: 0.2.0
-requires_load: [app-layer-refactor]
+parent_id: app-layer-refactor-design
+child_ids: []
+requires_load: [app-layer-refactor-design]
 ---
 
 # Feature — Refactor Architecture to Introduce Application Layer

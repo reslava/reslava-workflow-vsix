@@ -6,7 +6,7 @@ status: draft
 created: 2026-04-23
 version: 1
 tags: [vscode, filter, thread, status, ux]
-parent_id: vscode-extension-design
+parent_id: null
 child_ids: []
 requires_load: []
 ---

@@ -6,7 +6,7 @@ status: draft
 created: 2026-04-22
 version: 1
 tags: [ai, commands, promote, refine, summarize, vscode]
-parent_id: core-engine-design
+parent_id: null
 child_ids: []
 requires_load: [ai-integration-design]
 target_release: "0.3.0"

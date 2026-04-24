@@ -2,13 +2,12 @@
 type: plan
 id: link-index-plan-001
 title: "Implement Structured Link Index"
-status: draft
+status: done
 created: 2026-04-14
 version: 1
-design_version: 1
 tags: [linking, index, validation, performance]
 parent_id: link-index-design
-target_version: "0.2.0"
+child_ids: []
 requires_load: [link-index-design]
 ---
 

@@ -4,10 +4,9 @@ id: multi-workspace-mvp-design
 title: "Minimal Multi-Loom Workspace Support (MVP)"
 status: done
 created: 2026-04-14
-updated: 2026-04-14
 version: 2
 tags: [loom, workspace, cli, mvp]
-parent_id: multi-workspace-design
+parent_id: null
 child_ids: [multi-workspace-plan-001]
 requires_load: [multi-workspace-design]
 target_release: "0.2.0"

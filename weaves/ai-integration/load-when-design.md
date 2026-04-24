@@ -6,7 +6,7 @@ status: active
 created: 2026-04-23
 version: 1
 tags: [reference, ai, context, frontmatter, load_when]
-parent_id: reference-load-context-design
+parent_id: null
 child_ids: []
 requires_load: [reference-load-context-design]
 ---

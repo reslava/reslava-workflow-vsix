@@ -43,25 +43,25 @@ All decisions resolved in `migration-reference.md`. Execute in order: delete/arc
 
 | Done | # | Step | Files touched | Notes |
 |------|---|------|---------------|-------|
-| 🔳 | 10 | Fix `canonical-frontmatter-serializer-idea.md`: status → `done`, created → `2026-04-15`, remove trailing `}` from title | `core-engine/canonical-frontmatter-serializer/canonical-frontmatter-serializer-idea.md` | Unfilled template |
-| 🔳 | 11 | Fix `link-index-plan-001.md`: status `draft` → `done` | `core-engine/done/link-index-plan-001.md` | In `done/` but wrong status |
-| 🔳 | 12 | Fix `workflow-idea.md`: parent_id self-reference → `null` | `workflow/workflow-idea.md` | — |
-| 🔳 | 13 | Fix `workflow-design-v2.md`: status `draft` → `active` | `workflow/workflow-design-v2.md` | — |
-| 🔳 | 14 | Fix `app-layer-refactor-plan-001.md`: replace `design_id` + `target_version` → `parent_id: app-layer-refactor-design`; add canonical `child_ids: []` | `core-engine/done/app-layer-refactor-plan-001.md` | Old pre-canonical format |
-| 🔳 | 15 | Remove stale `child_ids` pointing to non-existent template files: `workflow-app-version-design` → `[]`, `workflow-user-personalization-design` → `[]` | 2 files in `workflow/` | `design-template.md`, `AI_INTEGRATION.md` don't exist |
-| 🔳 | 16 | Remove `updated` non-canonical field from `workflow-feature-model-design.md` (v2, now moved to workflow/) | `workflow/workflow-feature-model-design.md` | Not in canonical schema |
+| ✅ | 10 | Fix `canonical-frontmatter-serializer-idea.md`: status → `done`, created → `2026-04-15`, remove trailing `}` from title | `core-engine/canonical-frontmatter-serializer/canonical-frontmatter-serializer-idea.md` | Unfilled template |
+| ✅ | 11 | Fix `link-index-plan-001.md`: status `draft` → `done`; remove non-canonical `design_version`, `target_version`; add `child_ids: []` | `core-engine/done/link-index-plan-001.md` | In `done/` but wrong status |
+| ✅ | 12 | Fix `workflow-idea.md`: parent_id self-reference → `null` | `workflow/workflow-idea.md` | — |
+| ✅ | 13 | Fix `workflow-design-v2.md`: status `draft` → `active`; remove non-canonical `updated` field | `workflow/workflow-design-v2.md` | — |
+| ✅ | 14 | Fix `app-layer-refactor-plan-001.md`: replace `design_id` + `target_version` → `parent_id: app-layer-refactor-design`; add canonical `child_ids: []` | `core-engine/done/app-layer-refactor-plan-001.md` | Old pre-canonical format |
+| ✅ | 15 | Remove stale `child_ids` pointing to non-existent template files: `workflow-app-version-design` → `[]`, `workflow-user-personalization-design` → `[]` | 2 files in `workflow/` | `design-template.md`, `AI_INTEGRATION.md` don't exist |
+| ✅ | 16 | Remove `updated` non-canonical field from `workflow-feature-model-design.md` (v2, now moved to workflow/) — done in Pass 2 step 5 | `workflow/workflow-feature-model-design.md` | Not in canonical schema |
 
 ### Pass 4 — parent_id / child_ids Chain Fixes
 
 | Done | # | Step | Files touched | Notes |
 |------|---|------|---------------|-------|
-| 🔳 | 17 | Fix cross-weave parent_ids → `null` (cross-weave links belong in `requires_load` only): `core-engine-idea`, `vscode-extension-design`, `ai-integration-design`, `reference-load-context-design`, `ai-command-palette-design`, `docs-infra-directories-design` | ~6 files | parent_id is intra-thread only |
-| 🔳 | 18 | Fix `thread-status-filter-idea.md` parent_id: `vscode-extension-design` → `null` | `vscode-extension/thread-status-filter-idea.md` | Idea is thread root |
-| 🔳 | 19 | Fix token-optimization thread chain: `token-awareness-idea` parent_id → `null`; `ai-integration-token-optimization-design` parent_id → `token-awareness-idea` | `ai-integration/token-awareness-idea.md`, `ai-integration/ai-integration-token-optimization-design.md` | Idea is now thread root |
-| 🔳 | 20 | Fix `load-when-design` parent_id: `reference-load-context-design` → `null` (now own thread) | `ai-integration/load-when-design.md` | — |
-| 🔳 | 21 | Fix `multi-workspace-mvp-design` parent_id: `multi-workspace-design` → `null` (v1 archived) | `multi-workspace/multi-workspace-mvp-design.md` | — |
-| 🔳 | 22 | Fix `workflow-feature-model-design` parent_id: `workflow-design` → `workflow-design-v2` (correct id) | `workflow/workflow-feature-model-design.md` | Broken ref fixed |
-| 🔳 | 23 | Update child_ids in designs where plans were added or threads changed (audit: core-engine-design, vscode-extension-design, ai-integration-design) | ~3 files | Ensure child_ids lists are consistent with actual plan files |
+| ✅ | 17 | Fix cross-weave parent_ids → `null` (cross-weave links belong in `requires_load` only): `core-engine-idea`, `vscode-extension-design`, `ai-integration-design`, `reference-load-context-design`, `ai-command-palette-design`, `docs-infra-directories-design` | ~6 files | parent_id is intra-thread only |
+| ✅ | 18 | Fix `thread-status-filter-idea.md` parent_id: `vscode-extension-design` → `null` | `vscode-extension/thread-status-filter-idea.md` | Idea is thread root |
+| ✅ | 19 | Fix token-optimization thread chain: `token-awareness-idea` parent_id → `null`; `ai-integration-token-optimization-design` parent_id → `token-awareness-idea` | `ai-integration/token-awareness-idea.md`, `ai-integration/ai-integration-token-optimization-design.md` | Idea is now thread root |
+| ✅ | 20 | Fix `load-when-design` parent_id: `reference-load-context-design` → `null` (now own thread) | `ai-integration/load-when-design.md` | — |
+| ✅ | 21 | Fix `multi-workspace-mvp-design` parent_id: `multi-workspace-design` → `null` (v1 archived) | `multi-workspace/multi-workspace-mvp-design.md` | — |
+| ✅ | 22 | Fix `workflow-feature-model-design` parent_id: `workflow-design` → `workflow-design-v2` (correct id) — done in Pass 2 step 5 | `workflow/workflow-feature-model-design.md` | Broken ref fixed |
+| ✅ | 23 | Update child_ids in designs where plans were added or threads changed (audit: core-engine-design, vscode-extension-design, ai-integration-design) | ~3 files | Ensure child_ids lists are consistent with actual plan files |
 
 ### Pass 5 — Verify
 

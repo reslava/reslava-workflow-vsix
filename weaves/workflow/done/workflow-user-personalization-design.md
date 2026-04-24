@@ -7,7 +7,7 @@ created: 2026-04-12
 version: 1.0.0
 tags: [personalization, ux, configuration, templates]
 parent_id: workflow-design-v2
-child_ids: [design-template.md, AI_INTEGRATION.md]
+child_ids: []
 requires_load: []
 ---
 
