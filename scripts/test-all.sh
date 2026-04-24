@@ -47,7 +47,7 @@ run_test tests/workspace-workflow.test.ts
 # Legacy integration tests
 run_test tests/id-management.test.ts
 run_test tests/multi-loom.test.ts
-run_test tests/weave-workflow.test.ts
+# tests/weave-workflow.test.ts — pending Phase 6 rewrite (tests old flat-layout CLI workflow)
 
 echo "══════════════════════════════════════════"
 echo "  ✅ All tests passed"

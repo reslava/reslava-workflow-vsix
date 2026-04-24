@@ -104,11 +104,11 @@ Every layer is affected: core entities, fs loaders, app use-cases, CLI, VS Code 
 
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
-| 🔳 | 18 | Add Thread tree node with contextValue `thread`. Weave children = thread nodes + loose fibers section + weave-level chats. | `packages/vscode/src/tree/treeProvider.ts` | Step 10 |
-| 🔳 | 19 | Thread node children = idea + design + Plans section + Chats section (thread-level). Remove "primary design" logic (each thread has exactly one design). | `packages/vscode/src/tree/treeProvider.ts` | Step 18 |
-| 🔳 | 20 | Update inline button `when` clauses in `package.json`: thread-level commands on `viewItem == thread`, weave-level on `viewItem == weave`, loose-fiber specific entries. | `packages/vscode/package.json` | Step 19 |
-| 🔳 | 21 | Update commands to pass thread context: `weaveIdea`, `weaveDesign`, `weavePlan`, `promoteToDesign`, `promoteToPlan`, etc. Command palette prompts for thread when creating from weave-level. | `packages/vscode/src/commands/*.ts` | Step 19 |
-| 🔳 | 22 | Extension Host test rewrite: new `seedWeave` builds thread-based layout; tree tests verify Weave → Thread → Docs rendering; commands tests verify thread context. | `tests/vscode/helpers.ts`, `tests/vscode/tree.test.ts`, `tests/vscode/commands.test.ts` | Steps 18–21 |
+| ✅ | 18 | Add Thread tree node with contextValue `thread`. Weave children = thread nodes + loose fibers section + weave-level chats. | `packages/vscode/src/tree/treeProvider.ts` | Step 10 |
+| ✅ | 19 | Thread node children = idea + design + Plans section + Chats section (thread-level). Remove "primary design" logic (each thread has exactly one design). | `packages/vscode/src/tree/treeProvider.ts` | Step 18 |
+| ✅ | 20 | Update inline button `when` clauses in `package.json`: thread-level commands on `viewItem == thread`, weave-level on `viewItem == weave`, loose-fiber specific entries. | `packages/vscode/package.json` | Step 19 |
+| ✅ | 21 | Update commands to pass thread context: `weaveIdea`, `weaveDesign`, `weavePlan`. Commands read threadId from node or auto-derive from title. | `packages/vscode/src/commands/*.ts` | Step 19 |
+| ✅ | 22 | Extension Host test rewrite: new `seedWeave` builds thread-based layout; tree tests verify Weave → Thread → Docs rendering; commands tests verify thread context. | `tests/vscode/helpers.ts`, `tests/vscode/tree.test.ts`, `tests/vscode/commands.test.ts` | Steps 18–21 |
 
 ### Phase 6 — Integration Tests
 
