@@ -8,21 +8,20 @@
 ## Loom
 local mode
 
-## Active weave
-`weaves/core-engine`
+## Active thread
+none
 
 ## Active design
-`weave-and-thread-design.md`
+none
 
 ## Active plan
-> `weaves/docs-infra/plans/organize-loom-plan-001.md`
-- `weave-and-thread-plan-001.md` Phase 7, 8, 9
+none
 
 ## Last session
-2026-04-23 — Implemented core-tests-plan-001 (all 8 steps): DoneDoc entity tests,
-             weaveRepository done/ loading, planReducer, completeStep use-case,
-             closePlan (mock AI), doStep (mock AI), summarise (mock AI), test-all.sh.
-             Full suite passes (10 test files). Next: vscode-tests-plan-001.
+2026-04-24 — Completed weave-and-thread-plan-001 Phase 9 (all 34 steps). Audited
+             flat-layout shims (none found). Updated CLAUDE.md terminology + architecture.
+             Merged feat/weave-threads → main. Tagged v0.3.0. Updated README banner.
+             Next: new plan TBD (vscode-extension-plan-008 or new feature).
 
 ---
 <!-- STAGE 1 MAINTENANCE INSTRUCTIONS (delete this block when Stage → 2)
