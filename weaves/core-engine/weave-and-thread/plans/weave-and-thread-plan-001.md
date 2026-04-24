@@ -122,24 +122,24 @@ Every layer is affected: core entities, fs loaders, app use-cases, CLI, VS Code 
 
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
-| 🔳 | 26 | `scripts/migrate-to-threads.ts`: for each weave, groups flat docs by `parent_id` chains — each chain (idea → design → plans → dones) becomes a thread named after the design id (minus `-design`). Docs not part of a chain become loose fibers. Supports `--dry-run`. | `scripts/migrate-to-threads.ts` (new) | Step 9 |
-| 🔳 | 27 | Dry-run report: prints proposed moves without touching the filesystem. Human-reviewable output. | `scripts/migrate-to-threads.ts` | Step 26 |
-| 🔳 | 28 | Test migration on a copy of `weaves/`: `cp -r weaves/ /tmp/loom-migrate-test/ && migrate /tmp/loom-migrate-test/`. Verify result loads cleanly via new `loadWeave`. | ad-hoc | Steps 26–27 |
+| ✅ | 26 | `scripts/migrate-to-threads.ts`: for each weave, groups flat docs by `parent_id` chains — each chain (idea → design → plans → dones) becomes a thread named after the design id (minus `-design`). Docs not part of a chain become loose fibers. Supports `--dry-run`. | `scripts/migrate-to-threads.ts` (new) | Step 9 |
+| ✅ | 27 | Dry-run report: prints proposed moves without touching the filesystem. Human-reviewable output. | `scripts/migrate-to-threads.ts` | Step 26 |
+| ✅ | 28 | Test migration on a copy of `weaves/`: `cp -r weaves/ /tmp/loom-migrate-test/ && migrate /tmp/loom-migrate-test/`. Verify result loads cleanly via new `loadWeave`. | ad-hoc | Steps 26–27 |
 
 ### Phase 8 — Migrate Loom's Own weaves/
 
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
-| 🔳 | 29 | Backup: tag `v0.3.0-pre-weave-threads-migration`. Commit current flat state. | git | Step 28 |
-| 🔳 | 30 | Run migration on `weaves/`. Review diff. Fix any `requires_load` paths that reference moved files. | `weaves/**/*.md` | Step 29 |
-| 🔳 | 31 | Verify: run full test suite, run Loom CLI against `weaves/`, open VS Code and inspect tree view. | — | Step 30 |
+| ✅ | 29 | Backup: tag `v0.3.0-pre-weave-threads-migration`. Commit current flat state. | git | Step 28 |
+| ✅ | 30 | Run migration on `weaves/`. Review diff. Fix any `requires_load` paths that reference moved files. | `weaves/**/*.md` | Step 29 |
+| ✅ | 31 | Verify: run full test suite, run Loom CLI against `weaves/`, open VS Code and inspect tree view. | — | Step 30 |
 
 ### Phase 9 — Cleanup & Docs
 
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
-| 🔳 | 32 | Remove any flat-layout compatibility shims (should be none by design, but audit). Delete obsolete helpers like `weave.designs[0]` primary-design pattern. | codebase-wide | Step 31 |
-| 🔳 | 33 | Update `CLAUDE.md`: Thread is now first-class, update terminology table, architecture diagram, `Key terminology` section. | `CLAUDE.md` | Step 31 |
+| ✅ | 32 | Remove any flat-layout compatibility shims (should be none by design, but audit). Delete obsolete helpers like `weave.designs[0]` primary-design pattern. | codebase-wide | Step 31 |
+| ✅ | 33 | Update `CLAUDE.md`: Thread is now first-class, update terminology table, architecture diagram, `Key terminology` section. | `CLAUDE.md` | Step 31 |
 | 🔳 | 34 | Merge `feat/weave-threads` → `main`. Tag `v0.3.0`. Close this plan. | git | Steps 32–33 |
 
 ## Settled Decisions
