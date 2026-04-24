@@ -2,7 +2,7 @@
 type: plan
 id: weave-and-thread-plan-001
 title: "Weave & Thread — Phase 4 Implementation"
-status: draft
+status: done
 created: 2026-04-23
 version: 1
 tags: [refactor, core, threads, weaves, migration, phase-4]
@@ -140,7 +140,7 @@ Every layer is affected: core entities, fs loaders, app use-cases, CLI, VS Code 
 |------|---|------|---------------|------------|
 | ✅ | 32 | Remove any flat-layout compatibility shims (should be none by design, but audit). Delete obsolete helpers like `weave.designs[0]` primary-design pattern. | codebase-wide | Step 31 |
 | ✅ | 33 | Update `CLAUDE.md`: Thread is now first-class, update terminology table, architecture diagram, `Key terminology` section. | `CLAUDE.md` | Step 31 |
-| 🔳 | 34 | Merge `feat/weave-threads` → `main`. Tag `v0.3.0`. Close this plan. | git | Steps 32–33 |
+| ✅ | 34 | Merge `feat/weave-threads` → `main`. Tag `v0.3.0`. Close this plan. | git | Steps 32–33 |
 
 ## Settled Decisions
 
