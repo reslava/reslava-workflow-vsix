@@ -1,0 +1,197 @@
+import * as fsExtra from 'fs-extra';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { getActiveLoomRoot, saveDoc, loadDoc, findDocumentById, loadWeave } from '../../../fs/dist';
+import { weaveIdea } from '../../../app/dist/weaveIdea';
+import { weaveDesign } from '../../../app/dist/weaveDesign';
+import { weavePlan } from '../../../app/dist/weavePlan';
+import { Document } from '../../../core/dist';
+import { handleThreadContextResource } from '../resources/threadContext';
+import { requestSampling, SamplingMessage } from '../sampling';
+
+function msg(role: 'user' | 'assistant', text: string): SamplingMessage {
+    return { role, content: { type: 'text', text } };
+}
+
+type ToolModule = {
+    toolDef: { name: string; description: string; inputSchema: object };
+    handle: (root: string, args: Record<string, unknown>) => Promise<{ content: Array<{ type: 'text'; text: string }> }>;
+};
+
+function makeTool(
+    name: string,
+    description: string,
+    inputSchema: object,
+    handler: (root: string, args: Record<string, unknown>) => Promise<unknown>
+): ToolModule {
+    return {
+        toolDef: { name, description, inputSchema },
+        handle: async (root, args) => ({
+            content: [{ type: 'text' as const, text: JSON.stringify(await handler(root, args)) }],
+        }),
+    };
+}
+
+export function createGenerateTools(server: Server): ToolModule[] {
+    return [
+        makeTool(
+            'loom_generate_idea',
+            'Generate a Loom idea document using AI sampling. Creates the doc and writes the AI-generated body. Requires sampling support from the MCP client.',
+            {
+                type: 'object' as const,
+                properties: {
+                    weaveId: { type: 'string', description: 'Target weave ID' },
+                    threadId: { type: 'string', description: 'Target thread ID (optional)' },
+                    title: { type: 'string', description: 'Title for the new idea doc' },
+                    prompt: { type: 'string', description: 'Description of the idea to generate' },
+                },
+                required: ['weaveId', 'title', 'prompt'],
+            },
+            async (root, args) => {
+                const weaveId = args['weaveId'] as string;
+                const threadId = args['threadId'] as string | undefined;
+                const title = args['title'] as string;
+                const prompt = args['prompt'] as string;
+
+                const body = await requestSampling(
+                    server,
+                    [msg('user', `Draft a Loom idea document for the following:\n\n${prompt}\n\nWrite only the markdown body — no frontmatter. Start with a problem statement.`)],
+                    'You are a Loom document author. Write concise, focused Loom idea documents.'
+                );
+
+                const { tempId, filePath } = await weaveIdea(
+                    { title, weave: weaveId, threadId },
+                    { getActiveLoomRoot: () => getActiveLoomRoot(root), saveDoc, fs: fsExtra }
+                );
+
+                const doc = await loadDoc(filePath) as Document;
+                await saveDoc({ ...doc, content: body, version: doc.version + 1 } as Document, filePath);
+
+                return { id: tempId, filePath };
+            }
+        ),
+
+        makeTool(
+            'loom_generate_design',
+            'Generate a Loom design document from thread context using AI sampling. Requires sampling support from the MCP client.',
+            {
+                type: 'object' as const,
+                properties: {
+                    weaveId: { type: 'string', description: 'Target weave ID' },
+                    threadId: { type: 'string', description: 'Target thread ID' },
+                    title: { type: 'string', description: 'Title for the new design doc' },
+                },
+                required: ['weaveId', 'threadId', 'title'],
+            },
+            async (root, args) => {
+                const weaveId = args['weaveId'] as string;
+                const threadId = args['threadId'] as string;
+                const title = args['title'] as string;
+
+                const messages: SamplingMessage[] = [];
+                try {
+                    const ctx = await handleThreadContextResource(root, `loom://thread-context/${weaveId}/${threadId}`);
+                    messages.push(msg('user', `Thread context:\n\n${ctx.contents[0].text}`));
+                } catch { /* best-effort */ }
+                messages.push(msg('user', `Draft a Loom design document titled "${title}". Write only the markdown body — no frontmatter. Include architecture, components, data flow, key decisions, and open questions.`));
+
+                const body = await requestSampling(
+                    server,
+                    messages,
+                    'You are a Loom document author. Write detailed, structured Loom design documents.'
+                );
+
+                const { id, filePath } = await weaveDesign(
+                    { weaveId, title, threadId },
+                    { getActiveLoomRoot: () => getActiveLoomRoot(root), saveDoc, loadDoc, fs: fsExtra }
+                );
+
+                const doc = await loadDoc(filePath) as Document;
+                await saveDoc({ ...doc, content: body, version: doc.version + 1 } as Document, filePath);
+
+                return { id, filePath };
+            }
+        ),
+
+        makeTool(
+            'loom_generate_plan',
+            'Generate a Loom implementation plan from thread context using AI sampling. Returns the created plan with steps. Requires sampling support from the MCP client.',
+            {
+                type: 'object' as const,
+                properties: {
+                    weaveId: { type: 'string', description: 'Target weave ID' },
+                    threadId: { type: 'string', description: 'Target thread ID' },
+                    title: { type: 'string', description: 'Title for the new plan doc' },
+                },
+                required: ['weaveId', 'threadId', 'title'],
+            },
+            async (root, args) => {
+                const weaveId = args['weaveId'] as string;
+                const threadId = args['threadId'] as string;
+                const title = args['title'] as string;
+
+                const messages: SamplingMessage[] = [];
+                try {
+                    const ctx = await handleThreadContextResource(root, `loom://thread-context/${weaveId}/${threadId}`);
+                    messages.push(msg('user', `Thread context:\n\n${ctx.contents[0].text}`));
+                } catch { /* best-effort */ }
+                messages.push(msg('user', [
+                    `Generate an implementation plan for "${title}".`,
+                    'Return ONLY a JSON array of steps — no prose, no markdown fences:',
+                    '[{"order":1,"description":"..."},{"order":2,"description":"..."}]',
+                ].join('\n')));
+
+                const generated = await requestSampling(
+                    server,
+                    messages,
+                    'You are a Loom document author. Output ONLY valid JSON arrays for implementation plans.',
+                    8192
+                );
+
+                let steps: Array<{ order: number; description: string }> = [];
+                try {
+                    const jsonMatch = generated.match(/\[[\s\S]*\]/);
+                    if (jsonMatch) steps = JSON.parse(jsonMatch[0]);
+                } catch {
+                    steps = [{ order: 1, description: `Generated plan:\n\n${generated}` }];
+                }
+
+                const { id, filePath } = await weavePlan(
+                    { weaveId, title, threadId },
+                    { loadWeave, saveDoc, fs: fsExtra, loomRoot: root }
+                );
+
+                return { id, filePath, steps };
+            }
+        ),
+
+        makeTool(
+            'loom_generate_chat_reply',
+            'Generate an AI reply for a Loom chat document using sampling. Appends the reply under "## AI:". Requires sampling support from the MCP client.',
+            {
+                type: 'object' as const,
+                properties: {
+                    chatId: { type: 'string', description: 'Chat document ID' },
+                },
+                required: ['chatId'],
+            },
+            async (root, args) => {
+                const chatId = args['chatId'] as string;
+
+                const filePath = await findDocumentById(root, chatId);
+                if (!filePath) throw new Error(`Chat not found: ${chatId}`);
+
+                const chatContent = await fsExtra.readFile(filePath, 'utf8');
+
+                const reply = await requestSampling(
+                    server,
+                    [msg('user', chatContent)],
+                    'You are an AI assistant participating in a Loom design chat. Write a focused, constructive response continuing the conversation.'
+                );
+
+                await fsExtra.writeFile(filePath, `${chatContent}\n\n## AI:\n\n${reply}`, 'utf8');
+
+                return { id: chatId, filePath };
+            }
+        ),
+    ];
+}

@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 import { LoomTreeProvider, TreeNode } from './tree/treeProvider';
 import { ViewStateManager } from './view/viewStateManager';
 import { weaveIdeaCommand } from './commands/weaveIdea';
@@ -109,6 +111,20 @@ export function activate(context: vscode.ExtensionContext): LoomExtensionAPI {
         })
     );
 
+    // MCP connection detection — check for loom server in known config locations
+    const mcpStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 90);
+    mcpStatusBar.tooltip = 'Loom MCP server connection status';
+    context.subscriptions.push(mcpStatusBar);
+
+    async function syncMcpContext(): Promise<void> {
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const connected = workspaceRoot ? await detectMcpConfig(workspaceRoot) : false;
+        vscode.commands.executeCommand('setContext', 'loom.mcpConnected', connected);
+        mcpStatusBar.text = connected ? '$(plug) Loom MCP' : '$(debug-disconnect) Loom MCP';
+        mcpStatusBar.show();
+    }
+    syncMcpContext();
+
     context.subscriptions.push(
         vscode.workspace.onDidChangeWorkspaceFolders(() => syncAndRefresh())
     );
@@ -126,6 +142,26 @@ export function activate(context: vscode.ExtensionContext): LoomExtensionAPI {
 }
 
 export function deactivate() {}
+
+async function detectMcpConfig(workspaceRoot: string): Promise<boolean> {
+    const candidates = [
+        path.join(workspaceRoot, '.claude', 'mcp.json'),
+        path.join(workspaceRoot, '.claude.json'),
+        path.join(workspaceRoot, '.cursor', 'mcp.json'),
+        path.join(workspaceRoot, '.vscode', 'mcp.json'),
+    ];
+    for (const candidate of candidates) {
+        try {
+            const raw = fs.readFileSync(candidate, 'utf8');
+            const config = JSON.parse(raw);
+            // Claude Code format: { mcpServers: { loom: { ... } } }
+            // Cursor format: { mcpServers: { loom: { ... } } }
+            const servers = config?.mcpServers ?? config?.servers ?? {};
+            if (servers['loom']) return true;
+        } catch { /* file missing or invalid JSON — continue */ }
+    }
+    return false;
+}
 
 function debounce(fn: () => void, ms: number): () => void {
     let timer: ReturnType<typeof setTimeout> | undefined;

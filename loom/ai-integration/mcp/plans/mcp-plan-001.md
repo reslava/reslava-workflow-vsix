@@ -131,7 +131,7 @@ Each tool delegates to the corresponding existing `packages/app/` use case. The 
 | ✅ | 30 | `loom_get_blocked_steps` — no args; loads state + link index; runs `isStepBlocked` for every plan step; returns array of `{ planId, stepNumber, stepDescription, blockedBy }` | `packages/mcp/src/tools/getBlockedSteps.ts` | 6 |
 | ✅ | 31 | `loom_get_stale_plans` — no args; loads state; returns array of `{ planId, threadId, weaveId, designVersion, planDesignVersion }` for plans where `plan.design_version < thread.design.version` | `packages/mcp/src/tools/getStalePlans.ts` | 6 |
 | ✅ | 32 | `loom_get_stale_docs` — generalised stale check: returns all docs (ctx, ideas, designs) whose parent (via `parent_id`) or parent thread/weave has been updated since the doc's `created` date; includes stale plans. Agent uses this to know what needs refreshing. | `packages/mcp/src/tools/getStaleDocs.ts` | 6 |
-| ☐ | 33 | `loom_refresh_ctx` — args: `weaveId`, `threadId?`; triggers ctx regeneration via sampling (loads idea+design+recent chats, asks host agent for a summary, saves to `{thread}/ctx/{ctx-id}.md` or `{weave}/ctx.md`); returns `{ ctxId, filePath }` | `packages/mcp/src/tools/refreshCtx.ts` | 38 |
+| ✅ | 33 | `loom_refresh_ctx` — args: `weaveId`, `threadId?`; triggers ctx regeneration via sampling (loads idea+design+recent chats, asks host agent for a summary, saves to `{thread}/ctx/{ctx-id}.md` or `{weave}/ctx.md`); returns `{ ctxId, filePath }` | `packages/mcp/src/tools/refreshCtx.ts` | 38 |
 
 ---
 
@@ -141,12 +141,12 @@ Prompts are registered via `server.prompt(name, handler)`. Each handler loads re
 
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
-| ☐ | 32 | `continue-thread` prompt — args: `weaveId`, `threadId`; fetches `loom://thread-context/{weaveId}/{threadId}`; returns it as `user` message + system instruction "review the thread and propose the next action" | `packages/mcp/src/prompts/continueThread.ts` | 12 |
-| ☐ | 33 | `do-next-step` prompt — args: `planId`; loads plan via `loom://plan/{id}`, finds first incomplete step, loads full thread context + step `requires_load` refs; returns loaded context + "implement step N: {description}" instruction | `packages/mcp/src/prompts/doNextStep.ts` | 13, 14 |
-| ☐ | 34 | `refine-design` prompt — args: `designId`; loads design doc + linked chat history (`chats/` dir for that thread); returns them as context + "propose refinements" instruction | `packages/mcp/src/prompts/refineDesign.ts` | 11 |
-| ☐ | 35 | `weave-idea` prompt — args: `weaveId`, `threadId?`, `prompt`; returns a structured prompt asking the agent to draft a Loom idea doc (with correct frontmatter) from the user's description; agent is expected to call `loom_create_idea` with the result | `packages/mcp/src/prompts/weaveIdea.ts` | 5 |
-| ☐ | 36 | `weave-design` and `weave-plan` prompts — same pattern; load linked idea/design doc as context, return drafting instruction; agent calls `loom_create_design` / `loom_create_plan` | `packages/mcp/src/prompts/weaveDesign.ts`, `packages/mcp/src/prompts/weavePlan.ts` | 11 |
-| ☐ | 37 | `validate-state` prompt — no args; loads `loom://diagnostics` and `loom://summary`; returns them + "review diagnostics and propose fixes" instruction | `packages/mcp/src/prompts/validateState.ts` | 9, 10 |
+| ✅ | 32 | `continue-thread` prompt — args: `weaveId`, `threadId`; fetches `loom://thread-context/{weaveId}/{threadId}`; returns it as `user` message + system instruction "review the thread and propose the next action" | `packages/mcp/src/prompts/continueThread.ts` | 12 |
+| ✅ | 33 | `do-next-step` prompt — args: `planId`; loads plan via `loom://plan/{id}`, finds first incomplete step, loads full thread context + step `requires_load` refs; returns loaded context + "implement step N: {description}" instruction | `packages/mcp/src/prompts/doNextStep.ts` | 13, 14 |
+| ✅ | 34 | `refine-design` prompt — args: `designId`; loads design doc + linked chat history (`chats/` dir for that thread); returns them as context + "propose refinements" instruction | `packages/mcp/src/prompts/refineDesign.ts` | 11 |
+| ✅ | 35 | `weave-idea` prompt — args: `weaveId`, `threadId?`, `prompt`; returns a structured prompt asking the agent to draft a Loom idea doc (with correct frontmatter) from the user's description; agent is expected to call `loom_create_idea` with the result | `packages/mcp/src/prompts/weaveIdea.ts` | 5 |
+| ✅ | 36 | `weave-design` and `weave-plan` prompts — same pattern; load linked idea/design doc as context, return drafting instruction; agent calls `loom_create_design` / `loom_create_plan` | `packages/mcp/src/prompts/weaveDesign.ts`, `packages/mcp/src/prompts/weavePlan.ts` | 11 |
+| ✅ | 37 | `validate-state` prompt — no args; loads `loom://diagnostics` and `loom://summary`; returns them + "review diagnostics and propose fixes" instruction | `packages/mcp/src/prompts/validateState.ts` | 9, 10 |
 
 ---
 
@@ -156,9 +156,9 @@ Sampling lets the MCP server request the host agent to run an LLM inference. Thi
 
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
-| ☐ | 38 | Create `packages/mcp/src/sampling.ts` — exports `requestSampling(server, messages, systemPrompt)` helper; calls `server.requestSampling({ messages, systemPrompt, maxTokens: 4096 })`; returns the generated text string; handles `MethodNotFound` error (client doesn't support sampling) by throwing `SamplingUnsupportedError` | `packages/mcp/src/sampling.ts` | 5 |
-| ☐ | 39 | Expose sampling-backed tools: `loom_generate_idea`, `loom_generate_design`, `loom_generate_plan`, `loom_generate_chat_reply` — each loads the required context, calls `requestSampling`, then saves the result via the appropriate authoring tool; returns the saved doc `{ id, filePath }` | `packages/mcp/src/tools/generate.ts` | 38, 15–20 |
-| ☐ | 40 | VS Code extension: add MCP connection detection — check if `LOOM_ROOT` MCP server is registered; set `loom.mcpConnected` context key; gate sampling-dependent AI buttons (Weave Idea, Weave Design, Weave Plan, AI Reply) on `loom.mcpConnected`; show status bar item "Loom MCP: connected / disconnected" | `packages/vscode/src/extension.ts`, `packages/vscode/package.json` | 39 |
+| ✅ | 38 | Create `packages/mcp/src/sampling.ts` — exports `requestSampling(server, messages, systemPrompt)` helper; calls `server.requestSampling({ messages, systemPrompt, maxTokens: 4096 })`; returns the generated text string; handles `MethodNotFound` error (client doesn't support sampling) by throwing `SamplingUnsupportedError` | `packages/mcp/src/sampling.ts` | 5 |
+| ✅ | 39 | Expose sampling-backed tools: `loom_generate_idea`, `loom_generate_design`, `loom_generate_plan`, `loom_generate_chat_reply` — each loads the required context, calls `requestSampling`, then saves the result via the appropriate authoring tool; returns the saved doc `{ id, filePath }` | `packages/mcp/src/tools/generate.ts` | 38, 15–20 |
+| ✅ | 40 | VS Code extension: add MCP connection detection — check if `LOOM_ROOT` MCP server is registered; set `loom.mcpConnected` context key; gate sampling-dependent AI buttons (Weave Idea, Weave Design, Weave Plan, AI Reply) on `loom.mcpConnected`; show status bar item "Loom MCP: connected / disconnected" | `packages/vscode/src/extension.ts`, `packages/vscode/package.json` | 39 |
 
 **Notes:**
 - `SamplingUnsupportedError` should be caught in VS Code extension and shown as a tooltip: "Connect Claude Code to use AI generation"

@@ -34,11 +34,24 @@ import * as searchDocs from './tools/searchDocs';
 import * as getBlockedSteps from './tools/getBlockedSteps';
 import * as getStalePlans from './tools/getStalePlans';
 import * as getStaleDocs from './tools/getStaleDocs';
+import { createGenerateTools } from './tools/generate';
+import { createRefreshCtxTool } from './tools/refreshCtx';
+import * as continueThread from './prompts/continueThread';
+import * as doNextStep from './prompts/doNextStep';
+import * as refineDesign from './prompts/refineDesign';
+import * as weaveIdea from './prompts/weaveIdea';
+import * as weaveDesign from './prompts/weaveDesign';
+import * as weavePlan from './prompts/weavePlan';
+import * as validateState from './prompts/validateState';
 
-const TOOLS = [
+const BASE_TOOLS = [
     createIdea, createDesign, createPlan, updateDoc, appendToChat, createChat,
     startPlan, completeStep, closePlan, promote, finalizeDoc, archive, rename,
     findDoc, searchDocs, getBlockedSteps, getStalePlans, getStaleDocs,
+];
+
+const PROMPTS = [
+    continueThread, doNextStep, refineDesign, weaveIdea, weaveDesign, weavePlan, validateState,
 ];
 
 export function createLoomMcpServer(root: string): Server {
@@ -46,6 +59,12 @@ export function createLoomMcpServer(root: string): Server {
         { name: 'loom', version: '0.4.0' },
         { capabilities: { resources: {}, tools: {}, prompts: {} } }
     );
+
+    const TOOLS = [
+        ...BASE_TOOLS,
+        ...createGenerateTools(server),
+        createRefreshCtxTool(server),
+    ];
 
     server.setRequestHandler(ListResourcesRequestSchema, async () => ({
         resources: [
@@ -106,12 +125,18 @@ export function createLoomMcpServer(root: string): Server {
         return tool.handle(root, (args ?? {}) as Record<string, unknown>);
     });
 
-    // Prompts (Phase 7 — not yet implemented)
-    server.setRequestHandler(ListPromptsRequestSchema, async () => ({ prompts: [] }));
-    server.setRequestHandler(GetPromptRequestSchema, async () => ({
-        description: 'Not implemented',
-        messages: [],
+    server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+        prompts: PROMPTS.map(p => p.promptDef),
     }));
+
+    server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+        const { name, arguments: args } = request.params;
+        const prompt = PROMPTS.find(p => p.promptDef.name === name);
+        if (!prompt) {
+            throw new Error(`Unknown prompt: ${name}`);
+        }
+        return prompt.handle(root, (args ?? {}) as Record<string, string | undefined>);
+    });
 
     return server;
 }
