@@ -1,180 +1,207 @@
 # 🧵 Loom
 
-**Weave ideas into features with AI.**
+**Your AI agent's long-term memory.**
 
-**Document-driven. Event-sourced. Git-native. AI-agnostic.**
+Loom is a document-driven workflow system that gives AI agents persistent context, structured
+workflow state, and approval gates — so multi-session development stays coherent.
 
-Stop losing context when working with AI. Loom turns your Markdown files into a structured, versionable workflow engine that weaves human intent with AI execution.
-
-> 🚀 **v0.3.0 — Weave/Thread graph model shipped!**  
-> Threads are now first-class. The VS Code extension renders Thread nodes. Migration script included.
+> *"AI agents are stateless. Loom is the memory layer that makes them not."*
 
 ---
 
-## Why This Exists
+## The Problem
 
-AI-assisted development is stuck in the **Chat Era**. You prompt, the AI generates, you copy-paste, and context is lost. Features drift. Plans go stale. There's no single source of truth.
+AI-assisted development degrades over time. Session 1 is the best session — the AI is aligned,
+decisions get made, code gets written. By session 10, the AI has forgotten everything from
+sessions 2 through 9. You either re-explain context every time (expensive) or the AI makes
+suggestions that contradict earlier decisions (damaging).
 
-Loom replaces ephemeral chat with **persistent documents** that act as both specification and conversation log:
-
-- **Clear separation** between idea, design, planning, and execution.
-- **Automatic staleness detection** when designs change.
-- **Human-in-the-loop** approval for AI‑proposed state changes.
-- **Customizable workflows** that adapt to *your* process.
-- **Zero lock‑in** — everything is Markdown, versioned with Git.
+The cause isn't model quality — it's that there's no persistent memory of what was decided and why.
 
 ---
 
-## How It Works (In 30 Seconds)
+## What Loom Does
 
-1. **Documents are the Database** — Every **Weave** (project) lives in a folder: `weaves/`. Each **Thread** (workstream) is a subfolder with `idea.md`, `design.md`, `plan-*.md`.
-2. **Status is Derived** — No central state file. Frontmatter (`status: active`) defines the workflow.
-3. **AI Reads the Docs** — The extension injects `design.md` (or a summary) into the AI prompt.
-4. **You Approve Changes** — AI proposes an action (e.g., "Refine Design"). You see a diff, click **Approve**, and only then does the file change.
+Loom stores project memory as a typed, linked markdown document graph:
 
-```text
-Weave: Payment System
-└── Thread: stripe-integration
-    ├── stripe-integration-idea.md
-    ├── stripe-integration-design.md
-    └── plans/
-        └── stripe-integration-plan-001.md
 ```
+weaves/
+  {weave}/                     ← workstream (e.g. "auth", "payment-system")
+    ctx.md                     ← AI-generated weave summary
+    {thread}/                  ← feature thread
+      {thread}-idea.md         ← raw concept
+      {thread}-design.md       ← design decisions and conversation log
+      plans/
+        {plan-id}.md           ← implementation steps table
+      done/
+        {done-id}.md           ← post-implementation summary
+      ctx/                     ← AI-generated thread summary
+      chats/                   ← AI conversation logs
+weaves/ctx.md                  ← global project summary (read first every session)
+references/                    ← static architectural facts (architecture.md, etc.)
+```
+
+Every document has typed frontmatter. Status is derived from documents — there is no central state
+file. Changes are versioned in git.
 
 ---
 
-## Key Features (v0.3.0)
+## How AI Agents Use Loom
 
-| Feature | Description |
-|---------|-------------|
-| 📁 **Filesystem as DB** | 100% Git-friendly. Every state change is a versioned Markdown diff. |
-| 🔄 **Reactive Staleness** | Change a design? Linked plans are marked `staled: true` automatically. |
-| 🤖 **AI Handshake Protocol** | Structured JSON proposals + diff approval. No rogue changes. |
-| ⚙️ **Declarative Custom Workflows** | Define your own document types and transitions in `.loom/workflow.yml`. |
-| 🧩 **Built-in Effects** | Automate linting, deployment, notifications with `run_command`, etc. |
-| 🖥️ **VS Code Native** | Tree view, file decorations, toolbar commands. Fits your existing workflow. |
-| 🔌 **AI Agnostic** | Works with DeepSeek, OpenAI, Anthropic, or local models (Ollama). |
-| 🧵 **Mono & Multi‑Loom** | Work locally in a single project or manage multiple looms globally. |
-| 📊 **Rich Filtering & Sorting** | `loom status --filter status=active --sort id:asc` |
-| 🔗 **Blocker Resolution** | See exactly which steps are blocked and what's next. |
+Loom exposes its document graph as an **MCP server** (Model Context Protocol). Any MCP-compatible
+agent — Claude Code, Cursor, Continue, Cline — can read and write Loom state via standard tools.
+
+```json
+{
+  "mcpServers": {
+    "loom": {
+      "command": "loom",
+      "args": ["mcp"],
+      "env": { "LOOM_ROOT": "${workspaceFolder}" }
+    }
+  }
+}
+```
+
+The agent owns code execution. Loom owns workflow state. Each stays in its lane.
+
+### Key resources (read-only)
+
+| Resource | What it returns |
+|----------|----------------|
+| `loom://thread-context/{weaveId}/{threadId}` | Bundled idea + design + active plan + ctx — the complete "what am I working on" payload |
+| `loom://state?weaveId=&threadId=` | Full project state JSON, filterable |
+| `loom://plan/{id}` | Plan doc with parsed steps array |
+| `loom://requires-load/{id}` | Recursively resolved context chain |
+| `loom://diagnostics` | Broken links, dangling references |
+
+### Key tools (state mutations)
+
+| Tool | What it does |
+|------|-------------|
+| `loom_complete_step` | Mark a plan step done (idempotent) |
+| `loom_create_idea / design / plan / chat` | Create Loom documents |
+| `loom_update_doc` | Rewrite doc content, preserve frontmatter |
+| `loom_promote` | idea → design → plan, chat → idea |
+| `loom_refresh_ctx` | Regenerate ctx summary via AI sampling |
+| `loom_get_stale_docs` | List all docs whose parent has been updated since last generation |
+
+### Key prompts (guided workflows)
+
+| Prompt | What it does |
+|--------|-------------|
+| `do-next-step` | Loads the active plan step + all required context; primary "do work" entry point |
+| `continue-thread` | Loads thread context and proposes the next action |
+| `weave-idea / design / plan` | Guided document creation via AI sampling |
 
 ---
 
-## Quick Start
+## The Workflow
 
-### 1. Install
-
-```bash
-npm install -g @reslava/loom
+```
+1. Idea      → raw concept, rough scope
+2. Design    → decisions, trade-offs, rejected alternatives, conversation log
+3. Plan      → numbered implementation steps, each reviewable
+4. Implement → agent executes one step at a time, marking progress
+5. Done      → post-implementation summary, links to what was built
 ```
 
-### 2. Initialize a Workspace
+Human approves each phase transition. The agent never advances without a checkpoint.
 
-**Mono‑loom (inside your project):**
-```bash
-cd my-project
-loom init
-```
+**Staleness detection:** when a design is updated, linked plans are flagged stale. The agent sees
+the warning and knows to re-read the design before implementing. Context can't silently drift.
 
-**Multi‑loom (global workspace):**
-```bash
-loom init-multi
-```
-
-### 3. Weave Your First Idea
-
-```bash
-loom weave idea "Add Dark Mode"
-```
-
-### 4. Check Status
-
-```bash
-loom status
-loom status --verbose
-loom status --json
-```
-
-### 5. Explore Commands
-
-```bash
-loom --help
-loom weave --help
-```
+**`requires_load`:** documents declare their own dependencies. Before working on any doc, the agent
+reads everything in its `requires_load` chain. It can't miss context it doesn't know exists.
 
 ---
 
-## Example Workflow
+## VS Code Extension
 
-```bash
-# Create an idea
-loom weave idea "User Authentication" --thread auth
+The VS Code extension is the **human surface** over the same document graph:
 
-# Auto‑finalize and create a design
-loom weave design auth
-
-# Auto‑finalize design and create a plan
-loom weave plan auth
-
-# Start working on the plan
-loom start-plan auth-plan-001
-
-# Complete steps
-loom complete-step auth-plan-001 --step 1
-loom complete-step auth-plan-001 --step 2
-
-# See progress and next action
-loom status auth --verbose
-```
+- Tree view: weaves → threads → plans, chats, done docs
+- Inline buttons: rename, archive, delete
+- Toolbar commands: Weave Idea, Weave Design, Weave Plan, Start Plan
+- AI buttons (when MCP connected): Weave Idea, Weave Design, AI Reply — powered by MCP sampling
 
 ---
 
 ## Architecture
 
-Loom is built on a clean, layered architecture:
-
 ```
-CLI / VS Code  →  app (use‑cases)  →  core (domain) + fs (infrastructure)
+cli / vscode / mcp  →  app (use-cases)  →  core (domain) + fs (infrastructure)
 ```
 
-- **`core`**: Pure domain logic (entities, reducers, validation, filters).
-- **`app`**: Orchestration use‑cases with dependency injection.
-- **`fs`**: Infrastructure adapters (filesystem, serialization, indexing).
-- **`cli`**: Thin delivery layer (command parsing, console output).
+- **`core`**: Pure domain logic — entities, reducers, events, validation. No IO.
+- **`app`**: Orchestration use-cases. All state changes go through here.
+- **`fs`**: Infrastructure — file IO, frontmatter parsing, link index, repositories.
+- **`cli`**: Thin delivery layer — command parsing, console output.
+- **`vscode`**: Human surface — tree view, commands, toolbar.
+- **`mcp`**: Agent surface — MCP resources, tools, prompts, sampling. *(v0.5.0)*
 
-This separation makes Loom testable, maintainable, and ready for multiple frontends.
+No layer imports upward. All MCP tools delegate to `app` — no bypassing.
 
 ---
 
-## Documentation
+## Status
+
+| Feature | Status |
+|---------|--------|
+| Core engine (entities, reducers, events) | ✅ Shipped |
+| Filesystem layer (repositories, link index) | ✅ Shipped |
+| App use-cases (idea, design, plan, step, finalize, rename, archive) | ✅ Shipped |
+| CLI commands | ✅ Shipped |
+| VS Code extension (tree view, toolbar, commands) | ✅ Shipped (v0.3.x) |
+| Global ctx (`weaves/ctx.md`) | 🔧 Planned |
+| MCP server (`loom mcp`, resources, tools, prompts) | 🔧 In design (v0.5.0) |
+| MCP sampling (VS Code AI buttons via agent) | 🔧 Planned (v0.5.0) |
+| `loom init` with CLAUDE.md fusion | 🔧 Planned |
+
+---
+
+## Quick Start
+
+```bash
+npm install -g @reslava/loom
+
+# Initialize Loom in your project
+cd my-project
+loom init
+
+# Create your first idea
+loom weave idea "Add Dark Mode" --weave ui
+
+# Check project state
+loom status
+```
+
+---
+
+## Why MCP (not a custom AI integration)
+
+MCP (Model Context Protocol) is an open standard for AI agent tool integration — Anthropic-published
+but supported by Cursor, Continue, Cline, and others. Implementing once exposes Loom to every
+MCP-compatible agent.
+
+The agent owns code execution, bash, file edits, search — everything a coding agent already does
+well. Loom owns workflow state. Single billing via the user's existing agent connection. No separate
+API keys.
+
+---
+
+## References
 
 | Document | Purpose |
 |----------|---------|
-| [**ARCHITECTURE.md**](./docs/ARCHITECTURE.md) | Derived state, reducers, and event flow. |
-| [**WORKFLOW_YML.md**](./docs/WORKFLOW_YML.md) | Custom workflow configuration reference. |
-| [**EFFECTS.md**](./docs/EFFECTS.md) | Catalog of built-in effects. |
-| [**AI_INTEGRATION.md**](./docs/AI_INTEGRATION.md) | AI handshake protocol and native client design. |
-| [**CLI Commands Reference**](./references/cli-commands-reference.md) | Every `loom` command documented. |
-| [**VS Code Commands Reference**](./references/vscode-commands-reference.md) | All `Loom:` commands and keybindings. |
-| [**Workspace Structure Reference**](./references/workspace-directory-structure-reference.md) | Directory layout and file naming conventions. |
-
----
-
-## Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines and [DOCUMENTATION_GUIDE.md](./docs/DOCUMENTATION_GUIDE.md) for writing conventions.
-
-- **Report bugs** via GitHub Issues.
-- **Propose features** by opening a discussion.
-- **Improve documentation** – PRs are always appreciated.
+| [Architecture Reference](./references/loom/architecture.md) | Package relationships, AI integration, frontmatter fields, directory structure |
+| [CLI Commands Reference](./references/cli-commands-reference.md) | Every `loom` command |
+| [VS Code Commands Reference](./references/vscode-commands-reference.md) | All VS Code commands and keybindings |
+| [Workspace Structure Reference](./references/workspace-directory-structure-reference.md) | Directory layout and file naming |
+| [Claude's Vision of Loom](./references/loom-claude-own-vision.md) | AI perspective on what Loom changes |
 
 ---
 
 ## License
 
 MIT © 2026 Rafa Eslava
-
----
-
-**Ready to stop losing context?**  
-Star the repo, and let's weave something great together. 🧵✨

@@ -74,7 +74,7 @@ Implement `packages/mcp/` — a TypeScript MCP server that exposes Loom's docume
 | Done | # | Step | Files touched | Blocked by |
 |------|---|------|---------------|------------|
 | ☐ | 11 | Implement `loom://docs/{id}` resource — uses `findDocumentById(root, id)` to resolve path; loads raw markdown; returns `{ uri, mimeType: 'text/plain', text }` | `packages/mcp/src/resources/docs.ts` | 5 |
-| ☐ | 12 | Implement `loom://thread-context/{weaveId}/{threadId}` resource — loads the thread's idea, design, active plan (first plan with status `implementing` or `active`), and all docs listed in `requires_load` of the design; bundles into a single markdown document with section headers | `packages/mcp/src/resources/threadContext.ts` | 5 |
+| ☐ | 12 | Implement `loom://thread-context/{weaveId}/{threadId}` resource — loads (in priority order): (1) fresh ctx summary if present, (2) idea + design + active plan, (3) all `requires_load` refs. Accepts optional `?mode=` param (idea/design/plan/implementing) — when set, filters included reference docs using their `load_when` field (v1: include all if `load_when` not yet implemented; add filter once `load-when-plan-001` is done). Bundles into single markdown with `## {type}: {id}` section headers. | `packages/mcp/src/resources/threadContext.ts` | 5 |
 | ☐ | 13 | Implement `loom://plan/{id}` resource — loads the plan doc via `findDocumentById`; returns JSON with frontmatter + parsed `steps` array (using `parseStepsTable`) | `packages/mcp/src/resources/plan.ts` | 5 |
 | ☐ | 14 | Implement `loom://requires-load/{id}` resource — loads the doc, reads its `requires_load` array, recursively fetches each listed doc (deduplicated), returns the union as a JSON array of `{ id, path, content }` objects | `packages/mcp/src/resources/requiresLoad.ts` | 11 |
 
@@ -130,6 +130,8 @@ Each tool delegates to the corresponding existing `packages/app/` use case. The 
 | ☐ | 29 | `loom_search_docs` — args: `query`, `type?`, `weaveId?`; loads full state (optionally scoped), filters docs whose `id`, `title`, or `content` contains `query` (case-insensitive); returns array of `{ id, type, weaveId, threadId?, filePath, excerpt }` | `packages/mcp/src/tools/searchDocs.ts` | 6 |
 | ☐ | 30 | `loom_get_blocked_steps` — no args; loads state + link index; runs `isStepBlocked` for every plan step; returns array of `{ planId, stepNumber, stepDescription, blockedBy }` | `packages/mcp/src/tools/getBlockedSteps.ts` | 6 |
 | ☐ | 31 | `loom_get_stale_plans` — no args; loads state; returns array of `{ planId, threadId, weaveId, designVersion, planDesignVersion }` for plans where `plan.design_version < thread.design.version` | `packages/mcp/src/tools/getStalePlans.ts` | 6 |
+| ☐ | 32 | `loom_get_stale_docs` — generalised stale check: returns all docs (ctx, ideas, designs) whose parent (via `parent_id`) or parent thread/weave has been updated since the doc's `created` date; includes stale plans. Agent uses this to know what needs refreshing. | `packages/mcp/src/tools/getStaleDocs.ts` | 6 |
+| ☐ | 33 | `loom_refresh_ctx` — args: `weaveId`, `threadId?`; triggers ctx regeneration via sampling (loads idea+design+recent chats, asks host agent for a summary, saves to `{thread}/ctx/{ctx-id}.md` or `{weave}/ctx.md`); returns `{ ctxId, filePath }` | `packages/mcp/src/tools/refreshCtx.ts` | 38 |
 
 ---
 

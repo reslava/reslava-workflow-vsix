@@ -1,202 +1,182 @@
+---
+type: reference
+id: workspace-directory-structure-reference
+title: "Workspace Directory Structure — REslava Loom"
+status: active
+created: 2026-04-26
+version: 2
+tags: [reference, structure, filesystem]
+load: always
+load_when: [idea, design, plan, implementing]
+---
+
 # Workspace Directory Structure — REslava Loom
 
-Visual reference for a complete REslava Loom workspace.
-Shows both system configuration (`.loom/`) and user content (`threads/`, `chats/`).
-
-## Loom Discovery Modes
-
-REslava Loom supports two operational modes. The physical structure of a loom is **identical** in both modes; only the *location* and *discovery* differ.
-
-### Mono‑Loom Mode (Default for Existing Projects)
-
-The `.loom/` directory lives at the root of your project, alongside `src/`, `package.json`, etc.
-
-```
-~/dev/my-cool-app/
-├── .loom/                    # Loom configuration
-├── chats/                    # Informal chats
-├── threads/                  # Feature threads
-├── references/               # Global references
-├── src/                      # Your application code
-├── package.json
-└── .gitignore
-```
-
-**Behavior:** The CLI detects `.loom/` in the current directory (or any parent). No global registry is used. Ideal for a single project.
-
-### Multi‑Loom Mode (For Multiple Independent Workspaces)
-
-All looms live under `~/looms/`. A global registry at `~/.loom/config.yaml` tracks them.
-
-```
-~/looms/
-├── default/                  # Your main loom
-│   ├── .loom/
-│   ├── chats/
-│   ├── threads/
-│   └── references/
-├── test/                     # A safe sandbox loom
-│   └── ...
-└── experimental/             # Another loom
-    └── ...
-```
-
-**Behavior:** The CLI reads `~/.loom/config.yaml` to determine the active loom. Commands like `loom switch <name>` change context. Ideal for managing multiple projects or experimenting safely.
+> **Note:** This reference describes the **target structure** (post-migration).
+> Migration from `weaves/` + `references/` to `loom/` + `.loom/` is tracked in
+> `weaves/core-engine/directory-structure/plans/directory-structure-plan-001.md`.
 
 ---
 
-## Detailed Directory Structure (Mono‑Loom Shown)
+## Top-level layout
 
 ```
-workspace-root/
+{project-root}/
+  .loom/         ← project config (hidden, tool-managed)
+  loom/          ← all Loom docs (human + AI content)
+  packages/      ← source code (example — project-specific)
+  src/           ← source code (example — project-specific)
+```
+
+**`.loom/`** is config and tool state — managed by Loom, never edited directly.  
+**`loom/`** is the document graph — owned jointly by human and AI.
+
+---
+
+## Full structure
+
+```
+{project-root}/
 │
-├── .loom/                                    # Local configuration (committed)
-│   ├── workflow.yml                          # Custom workflow (falls back to built‑in)
-│   ├── cache/                                # Derived state cache (ignored by Git)
-│   ├── prompts/                              # AI session bootstrap prompts
-│   │   └── SESSION_START.md
-│   └── schemas/                              # JSON Schemas for editor validation
-│       └── workflow-schema.json
+├── .loom/                             ← project config (hidden, tool-managed)
+│   └── config.json                    ← workspace settings, LOOM_ROOT, stage
 │
-├── chats/                                    # Active, informal AI conversations
-│   └── 2026-04-18-auth-debate.md
-│
-├── threads/                                  # All active threads
-│   │
-│   ├── payment-system/                       # Thread folder (name = thread ID)
-│   │   │
-│   │   ├── payment-system-idea.md            # Idea document (optional)
-│   │   │
-│   │   ├── payment-system-design.md          # PRIMARY design (role: primary, required)
-│   │   ├── payment-system-design-webhooks.md # SUPPORTING design (role: supporting)
-│   │   │
-│   │   ├── payment-system-ctx.md             # Auto‑generated context summary (overwritten)
-│   │   │
-│   │   ├── plans/                            # Active implementation plans
-│   │   │   ├── payment-system-plan-001.md
-│   │   │   └── payment-system-plan-002.md
-│   │   │
-│   │   ├── done/                             # Completed documents (preserves thread context)
-│   │   │   ├── payment-system-retrospective.md
-│   │   │   └── plans/
-│   │   │       └── payment-system-plan-000.md
-│   │   │
-│   │   ├── deferred/                         # Postponed ideas, designs, or plans
-│   │   │   └── payment-system-v2-idea.md
-│   │   │
-│   │   ├── chats/                            # Archived chats related to this thread
-│   │   │   └── 2026-04-15-design-debate.md
-│   │   │
-│   │   └── references/                       # Thread‑specific reference files
-│   │       └── api-spec.pdf
-│   │
-│   ├── user-auth/                            # Another active thread
-│   │   ├── user-auth-design.md
-│   │   ├── plans/
-│   │   ├── done/
-│   │   └── ...
-│   │
-│   └── _archive/                             # Threads that are completely finished or abandoned
-│       ├── cancelled/                        # Decided not to pursue
-│       │   └── old-checkout/
-│       └── superseded/                       # Replaced by a different feature or design
-│           └── legacy-api/
-│
-├── references/                               # Global references shared by all threads
-│   ├── style-guide.md
-│   ├── adr/                                  # Architecture Decision Records
-│   │   ├── adr-001-database-choice.md
-│   │   └── adr-002-api-design.md
-│   ├── cli-commands-reference.md
-│   ├── vscode-commands-reference.md
-│   └── workspace-directory-structure-reference.md
-│
-├── .gitignore
-├── package.json
-├── src/                                      # Application source code
-└── ...
+└── loom/                              ← docs root (was: weaves/ + references/)
+    │
+    ├── ctx.md                         ← global ctx: project summary (AI-generated)
+    │
+    ├── refs/                          ← static architectural facts (was: references/)
+    │   ├── architecture.md
+    │   ├── workspace-directory-structure-reference.md  ← this file
+    │   └── ...
+    │
+    ├── chats/                         ← project-level AI conversations
+    │   └── {chat-id}.md
+    │
+    ├── .archive/                      ← archived weaves and project-level docs
+    │
+    └── {weave}/                       ← workstream (e.g. core-engine, vscode-extension)
+        │
+        ├── ctx.md                     ← weave ctx: summary of all threads in weave
+        │
+        ├── refs/                      ← weave-scoped architectural facts
+        │
+        ├── chats/                     ← weave-level AI conversations
+        │   └── {chat-id}.md
+        │
+        ├── .archive/                  ← archived threads and weave-level docs
+        │
+        └── {thread}/                  ← feature thread
+            │
+            ├── {thread}-idea.md       ← raw concept
+            ├── {thread}-design.md     ← design decisions and conversation log
+            │
+            ├── ctx/                   ← thread ctx: AI-generated summary
+            │
+            ├── refs/                  ← thread-scoped references (e.g. API specs)
+            │
+            ├── chats/                 ← thread-level AI conversations
+            │   └── {chat-id}.md
+            │
+            ├── plans/                 ← implementation plans
+            │   └── {plan-id}.md
+            │
+            ├── done/                  ← post-implementation summaries
+            │   └── {done-id}.md
+            │
+            └── .archive/             ← archived docs for this thread
 ```
 
 ---
 
-## Key File Naming Conventions (Suffixes)
+## 3-level scope
 
-| Document Type | Filename Pattern | Example |
-|---------------|-----------------|---------|
-| Idea | `*-idea.md` | `payment-system-idea.md` |
-| Design (primary) | `*-design.md` | `payment-system-design.md` |
-| Design (supporting) | `*-design-{topic}.md` | `payment-system-design-webhooks.md` |
-| Plan | `*-plan-*.md` | `payment-system-plan-001.md` |
-| Context summary | `*-ctx.md` | `payment-system-ctx.md` |
-| Session checkpoint | `*-ctx-{date}.md` | `payment-system-ctx-2026-04-18.md` |
-| Chat | `YYYY-MM-DD-topic.md` | `2026-04-18-auth-debate.md` |
+Every scope (project, weave, thread) supports the same set of directories:
 
----
+| Directory | At project level | At weave level | At thread level |
+|-----------|-----------------|----------------|-----------------|
+| `ctx.md` / `ctx/` | `loom/ctx.md` | `loom/{weave}/ctx.md` | `loom/{weave}/{thread}/ctx/` |
+| `refs/` | `loom/refs/` | `loom/{weave}/refs/` | `loom/{weave}/{thread}/refs/` |
+| `chats/` | `loom/chats/` | `loom/{weave}/chats/` | `loom/{weave}/{thread}/chats/` |
+| `.archive/` | `loom/.archive/` | `loom/{weave}/.archive/` | `loom/{weave}/{thread}/.archive/` |
 
-## Thread‑Based Archive Strategy
-
-To preserve context, each thread contains its own `done/`, `deferred/`, and `chats/` subdirectories. This ensures all work related to a feature stays together, even after completion.
-
-| Directory | Purpose |
-| :--- | :--- |
-| `threads/<thread>/done/` | Completed documents (designs, plans, ideas) that are no longer active. |
-| `threads/<thread>/deferred/` | Postponed work that may be revisited later. |
-| `threads/<thread>/chats/` | Archived chat conversations specific to this thread. |
-
-Threads that are entirely abandoned or replaced are moved to `threads/_archive/cancelled/` or `threads/_archive/superseded/`, preserving their internal structure.
+Rules:
+- Create any directory only when first needed — don't pre-create empty dirs
+- `ctx.md` (project + weave) is a single file; `ctx/` (thread) is a directory of session summaries
+- `refs/` contains static facts; never put AI-generated content in `refs/`
 
 ---
 
-## Design Roles
+## File naming conventions
 
-Each thread has exactly **one primary design** (the thread anchor) and any number of **supporting designs** (scoped sub‑topics).
+| Document type | Pattern | Example |
+|---------------|---------|---------|
+| Idea | `{thread}-idea.md` | `stripe-integration-idea.md` |
+| Design | `{thread}-design.md` | `stripe-integration-design.md` |
+| Plan | `{plan-id}.md` | `stripe-integration-plan-001.md` |
+| Done | `{done-id}.md` | `stripe-integration-done-001.md` |
+| Chat | `{chat-id}.md` | `mcp-chat.md` |
+| Ctx (file) | `ctx.md` | `ctx.md` |
+| Reference | `{id}.md` | `architecture.md` |
+
+---
+
+## Frontmatter: canonical field order
 
 ```yaml
-role: primary      # Required, one per thread
-role: supporting   # Optional, many allowed
+---
+type: idea | design | plan | done | chat | ctx | reference
+id: kebab-case-id
+title: "Human Readable Title"
+status: draft | active | implementing | done | archived
+created: YYYY-MM-DD
+version: 1
+tags: []
+parent_id: null
+child_ids: []
+requires_load: []
+# design-specific:
+role: primary | supporting
+target_release: "0.x.0"
+actual_release: null
+design_version: 1          # plan field — stale when < parent design.version
+# reference-specific:
+load: always | by-request
+load_when: [idea, design, plan, implementing]
+---
 ```
-
-Plans may have either the primary or a supporting design as their `parent_id`.
 
 ---
 
-## Context Files: Two Distinct Purposes
+## Ctx hierarchy
 
-| File | Location | Purpose | Lifecycle |
-|------|----------|---------|-----------|
-| `*-ctx.md` | Thread root | Auto‑generated summary of current design state | Overwritten on each generation |
-| `*-ctx-{date}.md` | `ctx/` subfolder | Manual session checkpoint | Permanent record |
+Agents read ctx top-down: project → weave → thread. Each level summarizes its scope without
+duplicating the level above.
 
----
+| Level | Path | Summarizes |
+|-------|------|-----------|
+| Project | `loom/ctx.md` | Architecture refs + `load: always` docs + active weaves roster |
+| Weave | `loom/{weave}/ctx.md` | All threads, statuses, active plan summary |
+| Thread | `loom/{weave}/{thread}/ctx/` | Idea + design decisions + plan progress |
 
-## Important Files Explained
-
-| Path | Purpose |
-|------|---------|
-| `~/.loom/config.yaml` | Global registry of all looms (multi‑loom only). |
-| `.loom/workflow.yml` | Custom workflow (overrides built‑in default). |
-| `.loom/cache/` | Local derived state cache (Git‑ignored). |
-| `chats/` (root) | Active, informal AI conversations. |
-| `threads/<thread>/` | One directory per thread. |
-| `threads/<thread>/*-design.md` | PRIMARY design — anchor document. |
-| `threads/<thread>/plans/` | Active implementation plans. |
-| `threads/<thread>/done/` | Completed documents for this thread. |
-| `threads/<thread>/deferred/` | Postponed work for this thread. |
-| `threads/<thread>/chats/` | Archived chats related to this thread. |
-| `threads/_archive/` | Entirely finished or abandoned threads. |
-| `references/` | Global documents shared across threads. |
+Regenerate stale ctx with `loom_refresh_ctx`. Check all stale docs with `loom_get_stale_docs`.
 
 ---
 
-## Thread Model Summary
+## Stale detection rules
 
-```
-Thread (identity = primary design id)
-├── 1 idea                    (optional)
-├── 1 design (role: primary)  (required — anchor)
-├── n designs (role: supporting, sorted by created)
-├── n plans (active)
-├── done/                     (completed documents)
-├── deferred/                 (postponed work)
-└── chats/                    (archived conversations)
-```
+- A plan is stale when `plan.design_version < parent_design.version`
+- A ctx is stale when it was generated before the last update to its parent scope
+- `loom_get_stale_docs` returns all stale docs across the project
+
+---
+
+## `.loom/` vs `loom/`
+
+| `.loom/` | `loom/` |
+|----------|---------|
+| Hidden (dotfile) | Visible |
+| Config and tool state | Human + AI content |
+| Managed by Loom CLI | Edited by humans and AI |
+| Never commit secrets | Committed to git |
+| Stage 1: contains `_status.md` | Stage 2: `_status.md` removed |

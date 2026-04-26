@@ -136,6 +136,8 @@ These mutate plan/step state and are the heart of the agentic loop.
 | `loom_search_docs` | Full-text search across all docs. Args: `query`, `type?`, `weaveId?`. |
 | `loom_get_blocked_steps` | List steps blocked by missing dependencies across all plans. |
 | `loom_get_stale_plans` | List plans whose `design_version` is below current design version. |
+| `loom_get_stale_docs` | Generalised stale check — returns all docs (including ctx, ideas) whose parent has been updated since last generation. |
+| `loom_refresh_ctx` | Trigger ctx regeneration for a thread or weave via sampling. Agent generates summary, server saves to `{thread}/ctx/` or `{weave}/ctx.md`. Args: `weaveId`, `threadId?`. |
 
 ### 6. Diagnostics (resources)
 
@@ -150,7 +152,7 @@ User-invocable prompt templates that the agent fills in. These are Loom's primar
 
 | Prompt | Description |
 |--------|-------------|
-| `continue-thread` | Loads thread context (idea + design + active plan) and asks the agent to propose the next action. Args: `weaveId`, `threadId`. |
+| `continue-thread` | Loads thread context (ctx first if fresh, then idea + design + active plan) and asks the agent to propose the next action. Args: `weaveId`, `threadId`. |
 | `do-next-step` | Loads the active plan, next incomplete step, and all `requires_load` referenced docs; asks the agent to implement it. Args: `planId`. |
 | `refine-design` | Loads design + linked chat history and asks for a refinement proposal. Args: `designId`. |
 | `weave-idea` | Generates a new idea doc from a user prompt. Invokes MCP sampling to ask the host agent for AI generation; saves via `loom_create_idea`. Args: `weaveId`, `threadId?`, `prompt`. |
@@ -181,6 +183,16 @@ MCP sampling is where the **server requests the host agent to run an LLM inferen
 | `suggest_next_action` | VS Code status indicator click | Asks host what to do next given current Loom state |
 
 ## Design Decisions
+
+### MCP is a delivery layer — always delegate to app
+
+MCP joins `cli` and `vscode` as the third delivery layer. The dependency rule is identical:
+
+```
+mcp  →  app  →  core + fs
+```
+
+Every MCP tool must call an existing `packages/app/` use case. If a use case doesn't exist yet, implement it in `app` first, then wrap it in the MCP tool. No bypassing. This ensures the same business logic is available from CLI, VS Code, and MCP without duplication.
 
 ### State changes go through tools, not through file writes
 

@@ -423,4 +423,172 @@ Single billing — the user's Claude Code subscription handles everything. No `r
 
 Design is clean now. Ready for plan.
 
+## Rafa:
 
+### mcp -> app
+`mcp` should always call an `app` function to get/set info from/to loom, thin wrappers over existing `app` use cases. Agree? What happen when we implement a use case no being define yet in `app`? We should implement `app` use case before `mcp`. Agree?
+
+### Stateful AI
+My vision of Loom always has been `Making AI stateful`
+Incorporing MCP is an approach than gives AI a set of resources, tools, ... and AI decide how and when to use them. So we must ensure that the reference data and tools of Loom are so clear and useful that AI always decide to use Loom instead of read full codebase to get fresh context.
+To achieve AI stateful we relay in:
+- requires_load frontmatter field
+- ctx 
+- reference 
+- making stale of childIds docs when a doc is updated. Show stale docs to user by UX, easy UX tools to update stale docs with AI. Stale docs knows their parent.
+
+### Tokens consume
+`weaves/ai-integration/load-when/load-when-design.md` is pending. `load-when` will be very important.
+To save tokens, ctx should be the source of truth for AI.
+We ensure to have always fresh ctx info docs global, per weave and per thread.
+ctx docs should include `load-when` field, filled by AI when create/update ctx summary
+
+### Important global reference docs
+- architecture
+- directory-structure
+
+### CLAUDE.md
+We need to ensure that this file sync with loom, Claud and user to make collaboration weaves smoothly
+
+### TODO
+1. What you think? Agree? Impovements, suggestions?
+2. Update the `mcp-design.md` and `plans/mcp-plan-001.md` if needed.
+3. Update `references/loom/architecture.md` including frontmatter fields
+Include `AI agent`, `MCP server`, `MCP cli`, some briefly mention to a resource, tool, promptm, sampling example, all that make the diagram clear and complete.
+
+## AI:
+
+All three points fully agreed. Refinements below, then I'll update the docs.
+
+---
+
+### 1. mcp → app: Agree completely
+
+MCP is the third delivery layer, same rule as CLI and VS Code:
+
+```
+cli / vscode / mcp  →  app  →  core + fs
+```
+
+If an app use case doesn't exist yet, implement it in app first, then wrap it in MCP. No bypassing. I'm adding this as a named design decision in `mcp-design.md` (it was only in the technical notes before).
+
+---
+
+### 2. Stateful AI — strong agreement, two additions
+
+The vision is correct and it's the best one-sentence positioning for Loom: *"Making AI stateful."*
+
+**What you listed + where it lives in MCP:**
+
+| Mechanism | Status | MCP role |
+|-----------|--------|----------|
+| `requires_load` | Implemented | `loom://requires-load/{id}` resource resolves the chain |
+| `ctx` docs | Partially — manual | `loom_refresh_ctx` tool (to add — generates fresh summary), `loom_get_stale_ctx` (to add) |
+| `reference` docs | Design exists (`load-when-design`) | `loom://thread-context` filters references by `load_when` + mode |
+| Stale child tracking | Plans only (`design_version`) | Extend: add `loom_get_stale_docs` tool; show stale ctx/ideas in tree |
+
+**Two additions needed:**
+1. `loom_refresh_ctx` tool — calls AI (via sampling) to regenerate the ctx summary for a thread or weave; saves to `{thread}/ctx/` or `{weave}/ctx.md`
+2. `loom_get_stale_docs` tool — generalises `loom_get_stale_plans` to all doc types: returns any doc where its parent (via `parent_id`) has been updated since the doc's last `created/updated` timestamp
+
+---
+
+### 3. Tokens via ctx + load-when
+
+`load-when-design` is well-designed. The integration point with MCP:
+
+`loom://thread-context/{weaveId}/{threadId}?mode=implementing` should filter included references using `load_when` — same enforcement logic the design specifies for `getAIContext(doc, mode)`. For v1 include all ctx (no filter); add `?mode=` filtering once `load-when` is implemented.
+
+**ctx hierarchy to maintain:**
+- Global: `weaves/ctx.md` — project-level summary
+- Per-weave: `weaves/{weave}/ctx.md` — weave summary
+- Per-thread: `weaves/{weave}/{thread}/ctx/` — thread summary  
+
+These should always be fresher than the full state and should be the first thing agents read. MCP `loom://thread-context` should prefer ctx docs over raw idea+design when ctx is fresh.
+
+---
+
+### 4. Global reference docs
+
+`references/loom/architecture.md` updated below with MCP layer, frontmatter fields, and MCP primitives.
+
+---
+
+### 5. CLAUDE.md
+
+Three things to sync:
+1. Add `loom mcp` as the agent surface entry point (drop the standalone AI API references)
+2. Add "use MCP tools for all Loom state changes — never edit weave files directly"
+3. Add `loom://thread-context` + `do-next-step` prompt as the primary agent entry points
+
+Will update in a follow-up — it's a session-critical file and deserves careful review.
+
+---
+
+Docs updated now.
+
+## Rafa:
+
+### Global ctx
+We need to add global ctx. Maybe the best place could be with globale references: `references/ctx.md`. Agree? If so, include it in `references/loom/architecture.md`. We should update all layers of loom to support it. 
+
+### 3 layers of context
+Now we have 3 layers of context info:
+1. global: this should summarize global reference docs: architecture.md and all AI consider that define the project and they way to implement it
+2. per weave: only weave related info, referencing others when needed.
+3. per thread: only thread related info, referencing others when needed.
+
+### TODO
+Create an idea in `weaves/core-engine/global-ctx`
+
+## AI:
+
+### Global ctx location: `weaves/ctx.md`, not `references/ctx.md`
+
+I'd push back on `references/ctx.md`. The distinction I want to preserve:
+
+- **`references/`** — static architectural facts. Written by humans, versioned, rarely change. Architecture.md belongs here.
+- **`ctx.md`** — AI-generated summaries. Dynamic, regenerated by `loom_refresh_ctx`, keyed to when the source docs last changed.
+
+Mixing one dynamic file into a static directory creates an exception the code has to special-case. `loom_refresh_ctx` would need to know "global ctx lives in `references/` but weave/thread ctx lives in `{scope}/ctx.md`".
+
+The cleaner path extends the existing pattern:
+
+```
+weaves/ctx.md            ← global ctx  (NEW)
+weaves/{weave}/ctx.md    ← weave ctx   (existing)
+weaves/{weave}/{thread}/ctx/  ← thread ctx  (existing)
+```
+
+Every scope follows `{scope}/ctx.md`. `loom_refresh_ctx` with `weaveId=null, threadId=null` writes to `weaves/ctx.md`. No special cases.
+
+What global ctx *summarizes* is still the reference docs — architecture.md, `load: always` refs, and the active weave/thread roster. But it lives in `weaves/` because it's AI state, not a reference doc.
+
+**One thing to add to `references/loom/architecture.md`:** just the path — `weaves/ctx.md` — in the ctx hierarchy table. Already planned.
+
+---
+
+### 3 layers — confirmed
+
+Clean and agreed. Each layer's scope:
+
+| Layer | Path | Summarizes |
+|-------|------|-----------|
+| Global | `weaves/ctx.md` | Architecture.md + `load: always` refs + active weaves/threads roster |
+| Weave | `weaves/{weave}/ctx.md` | All threads in the weave, their status, active plan summary |
+| Thread | `weaves/{weave}/{thread}/ctx/` | Idea + design decisions + plan progress + open questions |
+
+Each layer references the layer above when needed (e.g., thread ctx may say "see weave ctx for broader context"), but never duplicates it.
+
+This maps cleanly to the session start protocol:
+1. Global ctx → where am I in the project overall?
+2. Weave ctx → what's active in this workstream?
+3. Thread ctx → what specifically am I doing right now?
+
+And to MCP: `loom://thread-context` bundles thread ctx + weave ctx + any `requires_load` refs. Global ctx is always available at `loom://state` (summary field) or directly at `loom://docs/weaves/ctx`.
+
+---
+
+### Idea created
+
+`weaves/core-engine/global-ctx/global-ctx-idea.md` — done below.
