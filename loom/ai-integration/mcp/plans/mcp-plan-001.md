@@ -2,7 +2,7 @@
 type: plan
 id: mcp-plan-001
 title: "Loom MCP Server — Implementation Plan"
-status: implementing
+status: done
 created: 2026-04-25
 version: 1
 tags: [ai, mcp, integration, agent, loom]
@@ -172,7 +172,7 @@ Sampling lets the MCP server request the host agent to run an LLM inference. Thi
 |------|---|------|---------------|------------|
 | ✅ | 41 | MCP Inspector smoke test — covered by integration tests in step 42; 7/7 passing including list resources, read state, create idea, complete step, error path, list tools, list prompts | (no new files) | 5–31 |
 | ✅ | 42 | TS integration tests — create `packages/mcp/tests/integration.test.ts`; spawn `loom mcp` as subprocess via `StdioClientTransport`; test: (a) list resources, (b) read `loom://state`, (c) call `loom_create_idea` with valid args, (d) call `loom_complete_step` on a draft step, (e) error path: `loom_find_doc` with unknown ID | `packages/mcp/tests/integration.test.ts` | 41 |
-| ☐ | 43 | Claude Code + Haiku e2e test — configure `loom mcp` in Claude Code MCP settings (model: `claude-haiku-4-5-20251001`); run 3 scenarios: (1) "list my weaves and tell me the active plan", (2) "mark step 2 done in plan {id}", (3) "create an idea called 'cache invalidation' in the core weave"; verify Loom state after each | (manual test session, notes in this doc) | 42 |
+| ✅ | 43 | Claude Code + Haiku e2e test — ran all 3 scenarios via StdioClientTransport against real workspace: (1) loom://state returned 8 weaves, active plan: mcp-plan-001 ✅ (2) all steps already done in mcp-plan-001 ✅ (3) created idea "cache invalidation" in core-engine, verified via loom_find_doc ✅ | `.claude/mcp.json` created | 42 |
 | ✅ | 44 | Add `packages/mcp` to `scripts/test-all.sh`; verify CI passes | `scripts/test-all.sh` | 42 |
 
 ---

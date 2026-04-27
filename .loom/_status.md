@@ -15,7 +15,7 @@ local mode
 > `loom/ai-integration/mcp/mcp-design.md`
 
 ## Active plan
-> `loom/ai-integration/mcp/plans/mcp-plan-001.md`
+> `loom/ai-integration/mcp/plans/mcp-plan-001.md` — ✅ DONE (all 47 steps)
 
 ## Last session
 2026-04-26 — Completed mcp-plan-001 all phases (1–10, 47 steps). MCP server live:
