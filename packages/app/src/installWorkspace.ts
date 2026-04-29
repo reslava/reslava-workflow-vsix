@@ -149,7 +149,7 @@ export async function installWorkspace(
     const loomClaudeMdPath = path.join(loomDir, 'CLAUDE.md');
     const rootClaudeMdPath = path.join(root, 'CLAUDE.md');
     const claudeDir = path.join(root, '.claude');
-    const mcpJsonPath = path.join(claudeDir, 'mcp.json');
+    const mcpJsonPath = path.join(claudeDir, 'settings.json');
 
     // Step 1: init .loom/ structure (idempotent if exists)
     let loomDirCreated = false;

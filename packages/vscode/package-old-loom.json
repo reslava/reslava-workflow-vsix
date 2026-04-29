@@ -1,0 +1,123 @@
+{
+  "name": "reslava-workflow",
+  "displayName": "Assisted Workflow",
+  "description": "Visual workflow manager for AI-assisted development — plan, design, and track your work from VSCode.",
+  "version": "0.1.0",
+  "publisher": "reslava",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/reslava/reslava-workflow-vsix" },
+  "icon": "images/icon.png",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "keywords": ["workflow", "ai", "planning", "productivity", "claude", "assisted"],
+  "activationEvents": [
+    "workspaceContains:**/wf/sm/state.yml",
+    "workspaceContains:**/ai-workflow.json"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "assistedWorkflow",
+          "title": "Assisted Workflow",
+          "icon": "images/icon-sidebar.svg"
+        }
+      ]
+    },
+    "views": {
+      "assistedWorkflow": [
+        {
+          "id": "assistedWorkflow.workflow",
+          "name": "Workflow"
+        },
+        {
+          "id": "assistedWorkflow.session",
+          "name": "Session",
+          "initiallyCollapsed": true
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "assistedWorkflow.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "assistedWorkflow.cycleView",
+        "title": "Cycle View (folder / status / version / tags)",
+        "icon": "$(list-flat)"
+      },
+      {
+        "command": "assistedWorkflow.filterDocs",
+        "title": "Filter Docs",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "assistedWorkflow.newIdea",
+        "title": "Assisted Workflow: New Idea"
+      },
+      {
+        "command": "assistedWorkflow.newDesign",
+        "title": "Assisted Workflow: New Design"
+      },
+      {
+        "command": "assistedWorkflow.newPlan",
+        "title": "Assisted Workflow: New Plan"
+      },
+      {
+        "command": "assistedWorkflow.syncConfig",
+        "title": "Assisted Workflow: Sync Config"
+      },
+      {
+        "command": "assistedWorkflow.initialize",
+        "title": "Assisted Workflow: Initialize"
+      },
+      {
+        "command": "assistedWorkflow.saveWorkflow",
+        "title": "Assisted Workflow: Save Workflow"
+      },
+      {
+        "command": "assistedWorkflow.loadWorkflow",
+        "title": "Assisted Workflow: Load Workflow"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "assistedWorkflow.refresh",
+          "when": "view == assistedWorkflow.workflow",
+          "group": "navigation"
+        },
+        {
+          "command": "assistedWorkflow.cycleView",
+          "when": "view == assistedWorkflow.workflow",
+          "group": "navigation"
+        },
+        {
+          "command": "assistedWorkflow.filterDocs",
+          "when": "view == assistedWorkflow.workflow",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "vscode:prepublish": "node esbuild.js --production",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.23.0"
+  }
+}

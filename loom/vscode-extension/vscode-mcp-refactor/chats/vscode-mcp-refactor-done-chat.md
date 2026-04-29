@@ -176,3 +176,12 @@ Worth noting in the vscode-mcp-refactor design as a known risk if you plan to us
 
 - commit also all pending docs, mostly loom docs refactor
 - how you know it was DeepSeek? local `.claude/settings.json` dont include it. In loom project extension should use claude only
+
+## AI:
+
+**3 commits done:**
+- `6ee99d7` — chat frontmatter
+- `d023adb` — vscode MCP refactor
+- `99101a0` — loom docs (refs, done plans moved to thread root, mcp-reference, use-cases)
+
+**On the DeepSeek claim:** I didn't actually know — I assumed from reading `makeAIClient()` which defaults to DeepSeek in the code. That was speculation. If your extension settings point to Claude, then it was Claude that wrote that false step-4 reply. The provider doesn't matter — the real issue is that `loom.chatReply` feeds the chat file to the AI as a plain text prompt with no tool access. Any AI in that position will hallucinate plausible-sounding completions. The fix isn't the provider, it's the interface: chat-only AI can't verify file state.
